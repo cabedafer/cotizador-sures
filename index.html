@@ -1059,7 +1059,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
     doc.text("Qué cubre cada opción", M, y); y += 3;
     const rows = matrixRows(ops);
-    const firstW = landscape ? CW * 0.17 : CW * (n <= 2 ? 0.34 : 0.28);
+    const firstW = landscape ? CW * (n >= 10 ? 0.13 : 0.17) : CW * (n <= 2 ? 0.34 : 0.28);
     const colW = (CW - firstW) / n;
     // Encabezado agrupado por compañía (consecutivas)
     const groups = [];
@@ -1070,7 +1070,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     const head1 = [{ content: "", styles: { fillColor: [255, 255, 255] } }].concat(groups.map((g) => ({ content: g.cia, colSpan: g.n, styles: { fillColor: colorFor(g.cia, extraMap), textColor: NAVY, fontStyle: "bold", halign: "center", fontSize: 7.5 } })));
     const head2 = [{ content: "", styles: { fillColor: [255, 255, 255] } }].concat(ops.map((o) => ({ content: o.plan + "\n" + o.nivel, styles: { halign: "center" } })));
     const mbody = [["Cuota mensual"].concat(ops.map((o) => money(o.cuota)))].concat(rows.map(([label, vals]) => [label].concat(vals)));
-    const fs = n >= 7 ? 6.8 : 7.3;
+    const fs = n >= 11 ? 6 : n >= 9 ? 6.4 : n >= 7 ? 6.8 : 7.3;
     const groupStarts = new Set(groups.map((g) => g.start + 1));
     doc.autoTable({
       startY: y, margin: { left: M, right: M, top: 20, bottom: 14 },
@@ -1087,7 +1087,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
           else if (raw.startsWith(OK)) {
             const rest = raw.slice(1).trim();
             d.cell._check = true;
-            d.cell.text = doc.splitTextToSize((rest ? "      " : "") + rest, colW - 3);
+            d.cell.text = rest ? doc.splitTextToSize("      " + rest, Math.max(8, colW - 3)) : [""];
           }
         }
         if (d.section === "head" && d.row.index === 1 && d.column.index > 0) {
@@ -1104,15 +1104,15 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
         if (d.cell._check) {
           const fsz = d.cell.styles.fontSize;
           doc.setFontSize(fsz); doc.setFont("helvetica", d.cell.styles.fontStyle || "normal");
-          const lines = d.cell.text;
+          const lines = (d.cell.text && d.cell.text.length) ? d.cell.text : [""];
           const lineH = fsz * 0.3528 * 1.15;
           const total = lines.length * lineH;
           const top = d.cell.y + (d.cell.height - total) / 2;
-          const w0 = doc.getTextWidth(lines[0]);
+          const w0 = doc.getTextWidth(String(lines[0] || ""));
           const sx = d.cell.x + (d.cell.width - w0) / 2;
           const cy = top + lineH / 2;
           doc.setDrawColor(...TEAL); doc.setLineWidth(0.45);
-          const cx = (lines[0].trim() === "") ? d.cell.x + d.cell.width / 2 - 1.2 : sx + 0.2;
+          const cx = (String(lines[0] || "").trim() === "") ? d.cell.x + d.cell.width / 2 - 1.2 : sx + 0.2;
           doc.line(cx, cy, cx + 0.8, cy + 0.9);
           doc.line(cx + 0.8, cy + 0.9, cx + 2.4, cy - 1.0);
         }
