@@ -180,12 +180,11 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   <main class="layout">
     <div class="col">
       <section class="card" id="histCard">
-        <div class="card-h"><h2>Cotizaciones guardadas <span class="badge" id="histMode"></span></h2>
+        <div class="card-h"><h2>Mis cotizaciones guardadas <span class="badge" id="histMode"></span></h2>
           <button type="button" class="btn ghost" id="histToggle" aria-expanded="false">Ver historial</button></div>
         <div class="card-b" id="histBody" hidden>
           <div class="hist-tools">
-            <input type="search" id="histSearch" placeholder="Buscar por asegurado, vehículo o productor">
-            <label class="check"><input type="checkbox" id="histMine"> Solo las mías</label>
+            <input type="search" id="histSearch" placeholder="Buscar por asegurado o vehículo">
             <button type="button" class="btn ghost" id="histReload">Actualizar</button>
           </div>
           <div class="scroll"><table class="hist" id="histTable"></table></div>
@@ -1581,8 +1580,9 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
       return r.status === 204 ? [] : r.json();
     },
     async list() {
-      if (remote) return this.req("GET", "?select=*&order=actualizado.desc&limit=300");
-      return (store.get("cot.history") || []).sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado)));
+      const pid = me ? me.id : "";
+      if (remote) return this.req("GET", "?select=*&productor_id=eq." + encodeURIComponent(pid) + "&order=actualizado.desc&limit=300");
+      return (store.get("cot.history") || []).filter((x) => x.productor_id === pid).sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado)));
     },
     async save(rec) {
       const now = new Date().toISOString();
@@ -1612,19 +1612,19 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   function renderHist() {
     const t = $("histTable"); t.textContent = "";
     const q = norm($("histSearch").value || "");
-    const rows = histRows.filter((r) => (!$("histMine").checked || r.productor_id === (me && me.id)) && (!q || norm([r.cliente, r.vehiculo, r.productor].join(" ")).includes(q)));
+    const rows = histRows.filter((r) => r.productor_id === (me && me.id) && (!q || norm([r.cliente, r.vehiculo].join(" ")).includes(q)));
     if (!rows.length) { const cap = document.createElement("caption"); cap.className = "hint"; cap.style.textAlign = "left"; cap.style.padding = "8px 0"; cap.textContent = histRows.length ? "No hay cotizaciones que coincidan con la búsqueda." : "Todavía no hay cotizaciones guardadas. Se guardan al tocar \"Guardar cotización\" o al descargar el PDF."; t.appendChild(cap); return; }
-    const head = document.createElement("thead"); head.innerHTML = "<tr><th>Fecha</th><th>Asegurado</th><th>Vehículo</th><th>Productor</th><th>Opciones</th><th>Desde</th><th></th></tr>"; t.appendChild(head);
+    const head = document.createElement("thead"); head.innerHTML = "<tr><th>Fecha</th><th>Asegurado</th><th>Vehículo</th><th>Opciones</th><th>Desde</th><th></th></tr>"; t.appendChild(head);
     const tb = document.createElement("tbody");
     rows.forEach((r) => {
       const tr = document.createElement("tr");
       const ops = ((r.datos && r.datos.opciones) || []).filter((o) => o.on !== false);
       const min = ops.map((o) => o.cuota).filter((v) => v != null).sort((a, b) => a - b)[0];
-      const labels = ["Fecha", "Asegurado", "Vehículo", "Productor", "Opciones", "Desde"];
-      [fmtFecha(r.actualizado), r.cliente || "—", r.vehiculo || "—", r.productor || "—", String(ops.length), min != null ? "$" + fmtMoney(min, true) : "—"].forEach((v, i) => {
+      const labels = ["Fecha", "Asegurado", "Vehículo", "Opciones", "Desde"];
+      [fmtFecha(r.actualizado), r.cliente || "—", r.vehiculo || "—", String(ops.length), min != null ? "$" + fmtMoney(min, true) : "—"].forEach((v, i) => {
         const td = document.createElement("td"); td.textContent = v;
         if (i === 1) td.className = "main"; else td.setAttribute("data-label", labels[i]);
-        if (i === 5) td.className = "num";
+        if (i === 4) td.className = "num";
         tr.appendChild(td);
       });
       const acts = document.createElement("td"); acts.className = "acts";
@@ -1649,7 +1649,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     t.appendChild(tb);
   }
   function resetHist() {
-    histRows = []; $("histBody").hidden = true; $("histSearch").value = ""; $("histMine").checked = false;
+    histRows = []; $("histBody").hidden = true; $("histSearch").value = "";
     $("histToggle").textContent = "Ver historial"; $("histToggle").setAttribute("aria-expanded", "false");
     $("histTable").textContent = ""; $("histStatus").textContent = "";
   }
@@ -1681,7 +1681,6 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     if (!b.hidden) loadHist();
   });
   $("histSearch").addEventListener("input", renderHist);
-  $("histMine").addEventListener("change", renderHist);
   $("histReload").addEventListener("click", loadHist);
 
   // ---------- Inicio ----------
