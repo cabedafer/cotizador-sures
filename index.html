@@ -1,0 +1,1538 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Cotizador de Seguros</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: herramienta de dos columnas — flujo de trabajo a la izquierda, vista previa del PDF a la derecha */
+:root {
+  --bg: #F3F5F8; --surface: #FFFFFF; --surface-2: #EEF1F6; --ink: #1B2333; --muted: #5F6878;
+  --line: #D9DEE6; --navy: #1B2A4A; --navy-ink: #FFFFFF; --accent: #0E7C7B; --accent-soft: #DDF0EE;
+  --warn-bg: #FFF5DB; --warn-ink: #6B4E00; --err: #B42318; --fp: #DCE8F5; --sancor: #F5DCEA; --merc: #DDF0EC; --allianz: #E6E0F2; --other: #EFE6D3;
+  --font: "Public Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111722; --surface: #18202E; --surface-2: #202A3B; --ink: #E6EAF1; --muted: #9AA4B5;
+  --line: #2E3A4F; --navy: #24375F; --navy-ink: #FFFFFF; --accent: #4CC3BF; --accent-soft: #163634;
+  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --other: #3A3324; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111722; --surface: #18202E; --surface-2: #202A3B; --ink: #E6EAF1; --muted: #9AA4B5;
+  --line: #2E3A4F; --navy: #24375F; --navy-ink: #FFFFFF; --accent: #4CC3BF; --accent-soft: #163634;
+  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --other: #3A3324; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font); font-size: 14px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--navy); }
+
+/* ---------- Login ---------- */
+.login { min-height: 100vh; display: grid; place-items: center; padding-block: 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.login-card { width: 100%; max-width: 520px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.login-head { background: var(--navy); color: var(--navy-ink); padding: 22px 24px; }
+.login-head .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+.login-head h1 { font-size: 22px; margin-top: 4px; }
+.login-body { padding: 22px 24px 24px; display: grid; gap: 16px; }
+.users { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.user-btn { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); text-align: left; }
+.user-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
+.user-btn span { font-weight: 600; min-width: 0; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+.field input, .field select, .field textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-width: 0; }
+.field textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0B1F1E; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0B1F1E; } }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.error { color: var(--err); font-size: 13px; min-height: 18px; }
+.hint { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- App ---------- */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--navy); color: var(--navy-ink); }
+.topbar-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 16px; }
+.brand small { font-weight: 400; opacity: .7; margin-left: 8px; font-size: 13px; }
+.who { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.who .avatar { width: 30px; height: 30px; background: rgba(255,255,255,.16); }
+.who button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: inherit; border-radius: 6px; padding: 5px 10px; font-size: 12.5px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1500px; margin: 0 auto; align-items: start; }
+.col { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.card-h h2 { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.step { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--muted); font-size: 12px; display: grid; place-items: center; font-weight: 700; }
+.card-b { padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.example-banner { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--accent-soft); border: 1px solid var(--accent); color: var(--ink); border-radius: 10px; padding: 10px 14px; font-size: 13.5px; }
+
+.drop { border: 1.5px dashed var(--line); border-radius: 10px; padding: 22px 16px; text-align: center; background: var(--surface-2); display: grid; gap: 6px; justify-items: center; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop strong { font-size: 14.5px; }
+.files { display: grid; gap: 6px; }
+.file { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; min-width: 0; }
+.file .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
+.chip.ok { background: var(--accent-soft); color: var(--accent); }
+.chip.bad { background: transparent; color: var(--err); border: 1px solid var(--err); }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 6px; }
+
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+@media (max-width: 640px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid2 { grid-template-columns: minmax(0, 1fr); } }
+
+.scroll { overflow-x: auto; min-width: 0; }
+table.ops { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.ops th { text-align: left; font-size: 11.5px; color: var(--muted); font-weight: 600; padding: 6px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.ops td { padding: 6px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.ops input[type=text], table.ops select { width: 100%; padding: 6px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); min-width: 70px; }
+table.ops input[id^=plan-] { min-width: 190px; }
+table.ops select { min-width: 170px; }
+table.ops input.money { text-align: right; font-family: var(--mono); min-width: 110px; }
+.cia-tag { display: inline-block; padding: 3px 8px; border-radius: 6px; font-weight: 600; font-size: 12px; white-space: nowrap; }
+.mv { display: flex; gap: 2px; }
+.mv button { border: 1px solid var(--line); background: var(--surface); border-radius: 5px; width: 26px; height: 26px; font-size: 12px; color: var(--muted); }
+tr.off td:not(:first-child) { opacity: .45; }
+.row-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; }
+
+table.mx { border-collapse: collapse; font-size: 12.5px; min-width: 100%; }
+table.mx th, table.mx td { border-bottom: 1px solid var(--line); padding: 4px; }
+table.mx thead th { background: var(--surface); font-size: 11.5px; text-align: center; vertical-align: bottom; min-width: 170px; }
+table.mx thead th:first-child { text-align: left; min-width: 180px; }
+table.mx td:first-child { font-weight: 600; font-size: 12px; white-space: normal; }
+table.mx input { width: 100%; padding: 5px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; text-align: center; font-size: 12.5px; }
+table.mx input:hover { border-color: var(--line); }
+table.mx input:focus { border-color: var(--accent); background: var(--surface); }
+table.mx input.consultar { color: var(--warn-ink); background: var(--warn-bg); }
+table.mx input.yes { color: var(--accent); }
+
+.warns { display: grid; gap: 6px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 9px 12px; font-size: 13px; }
+
+.pages { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px; background: var(--surface-2); }
+.pages .empty { grid-column: 1 / -1; }
+.pages canvas { width: 100%; height: auto; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.pages .empty { color: var(--muted); font-size: 13px; padding: 30px 10px; text-align: center; }
+.dl { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border-top: 1px solid var(--line); }
+.dl .btn { min-width: 220px; }
+.status { font-size: 12.5px; color: var(--muted); min-height: 18px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<section id="loginView" class="login" hidden>
+  <div class="login-card">
+    <div class="login-head">
+      <div class="eyebrow">Productores Asesores de Seguros</div>
+      <h1>Cotizador de Seguros</h1>
+    </div>
+    <form class="login-body" id="loginForm" autocomplete="off">
+      <div class="field"><label>Elegí tu usuario</label></div>
+      <div class="users" id="userList" role="group" aria-label="Usuarios"></div>
+      <div class="field">
+        <label for="pin">PIN de 4 dígitos</label>
+        <input id="pin" type="password" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="••••">
+      </div>
+      <div class="error" id="loginError" role="alert"></div>
+      <button class="btn primary" type="submit" id="loginBtn">Ingresar</button>
+    </form>
+  </div>
+</section>
+
+<section id="appView" hidden>
+  <header class="topbar">
+    <div class="topbar-in">
+      <div class="brand">Cotizador de Seguros <small>Comparativos para el asegurado</small></div>
+      <div class="who"><div class="avatar" id="meAvatar"></div><span id="meName"></span><button type="button" id="logoutBtn">Cambiar usuario</button></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="col">
+      <div class="example-banner" id="exampleBanner" hidden>
+        <span><strong>Estás viendo un ejemplo.</strong> Cargá los PDFs de tus cotizaciones y se reemplaza.</span>
+        <button type="button" class="btn ghost" id="clearExample">Empezar de cero</button>
+      </div>
+
+      <section class="card">
+        <div class="card-h"><h2><span class="step">1</span>Cotizaciones</h2><button type="button" class="btn ghost" id="newBtn">Nueva cotización</button></div>
+        <div class="card-b">
+          <label class="drop" id="drop" for="fileInput">
+            <strong>Arrastrá los PDFs acá o tocá para elegirlos</strong>
+            <span class="hint">Federación Patronal, Sancor, Mercantil Andina y Allianz. Podés subir varios a la vez.</span>
+            <input id="fileInput" type="file" accept="application/pdf" multiple class="sr">
+          </label>
+          <div class="files" id="fileList"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2><span class="step">2</span>Asegurado y vehículo</h2></div>
+        <div class="card-b">
+          <div class="grid2">
+            <div class="field"><label for="cliente">Nombre del asegurado</label><input id="cliente" type="text" placeholder="Ej.: Tomás Pérez"></div>
+            <div class="field"><label for="fecha">Fecha</label><input id="fecha" type="text" placeholder="dd/mm/aaaa"></div>
+          </div>
+          <div class="grid4">
+            <div class="field" style="grid-column: span 2"><label for="vModelo">Vehículo</label><input id="vModelo" type="text"></div>
+            <div class="field"><label for="vAnio">Año</label><input id="vAnio" type="text"></div>
+            <div class="field"><label for="vUso">Uso</label><input id="vUso" type="text"></div>
+            <div class="field" style="grid-column: span 2"><label for="vRad">Localidad de guarda</label><input id="vRad" type="text"></div>
+            <div class="field"><label for="iva">Condición de IVA</label><input id="iva" type="text" list="ivaList" placeholder="Consumidor final"></div>
+            <div class="field"><label for="vMoto">Tipo</label><select id="vMoto"><option value="0">Automotor</option><option value="1">Moto</option></select></div>
+            <datalist id="ivaList"><option value="Consumidor final"><option value="Responsable inscripto"><option value="Monotributista"><option value="Exento"></datalist>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2><span class="step">3</span>Opciones a mostrar</h2>
+          <label class="check"><input type="checkbox" id="ranking"> Numerar como ranking (1º, 2º…)</label></div>
+        <div class="card-b">
+          <div class="scroll"><table class="ops" id="opsTable">
+            <thead><tr><th>Incluir</th><th>Compañía</th><th>Plan</th><th>Nivel</th><th>Suma asegurada</th><th>Cuota mensual</th><th>Orden</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <div class="row-actions">
+            <span class="hint">Por defecto va primero Federación Patronal. Usá las flechas para cambiar el orden.</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" id="sortPriceBtn">Ordenar por cuota (menor a mayor)</button>
+            <button type="button" class="btn ghost" id="sortBtn">Ordenar por compañía</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2><span class="step">4</span>Coberturas</h2>
+          <label class="check"><input type="checkbox" id="allRows"> Ver todas las filas</label></div>
+        <div class="card-b">
+          <span class="hint">Corregí lo que haga falta. Escribí <strong>✓</strong> para incluido (podés tocar el botón ✓ con la celda seleccionada) y dejá vacío lo que no cubre. Las celdas en amarillo dicen "Consultar".</span>
+          <div class="scroll"><table class="mx" id="mxTable"></table></div>
+          <div><button type="button" class="btn" id="tickBtn" title="Insertar ✓ en la celda seleccionada">✓ Insertar tilde</button></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h2><span class="step">5</span>Notas para el asegurado</h2><button type="button" class="btn ghost" id="notesRegen">Regenerar</button></div>
+        <div class="card-b">
+          <div class="field"><label for="notas">Una nota por línea. Salen en la sección "Importante" del PDF.</label><textarea id="notas"></textarea></div>
+        </div>
+      </section>
+
+      <section class="card" id="warnCard" hidden>
+        <div class="card-h"><h2>Para revisar antes de enviar</h2></div>
+        <div class="card-b"><div class="warns" id="warns"></div></div>
+      </section>
+    </div>
+
+    <aside class="col preview">
+      <section class="card">
+        <div class="card-h"><h2>Vista previa del PDF</h2><span class="status" id="pageInfo"></span></div>
+        <div class="pages" id="pages"><div class="empty">Cargá cotizaciones para ver el comparativo.</div></div>
+        <div class="dl">
+          <button type="button" class="btn primary" id="dlBtn">Descargar PDF</button>
+          <div class="status" id="dlStatus" role="status"></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* Lectores de cotizaciones (Federación Patronal, Sancor, Mercantil Andina).
+   Entrada: items de texto de pdf.js [{p, x, y, s}] (y medido desde arriba).
+   Salida: {cia, vehiculo:{...}, opciones:[...], avisos:[...], fecha} */
+(function (root) {
+  const OK = "✓";
+
+  // ---------- utilidades ----------
+  const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+  const fmtInt = (n) => "$" + Math.round(n).toLocaleString("es-AR").replace(/,/g, ".");
+  function numAR(s) { // "$ 1.234.567,89" -> 1234567.89
+    const m = String(s).replace(/\s/g, "").match(/-?[\d.]+(,\d+)?/);
+    if (!m) return null;
+    return parseFloat(m[0].replace(/\./g, "").replace(",", "."));
+  }
+  function numUS(s) { // "42,020,000.00" -> 42020000
+    const m = String(s).replace(/\s/g, "").match(/-?[\d,]+(\.\d+)?/);
+    if (!m) return null;
+    return parseFloat(m[0].replace(/,/g, ""));
+  }
+  function titleCase(s) {
+    return s.toLowerCase().replace(/(^|[\s(/-])([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
+  }
+  function cleanModel(s) {
+    return s.replace(/\s+L\d*\/\d{2}\b/i, "").replace(/\s+/g, " ").trim();
+  }
+
+  // "BARRIOS LAUTARO FRANCO" -> "Lautaro Franco Barrios"; "MARTINEZ, ALEJANDRO" -> "Alejandro Martinez"
+  function nombreNatural(raw) {
+    const t = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!t) return "";
+    if (t.includes(",")) {
+      const [ap, no] = t.split(",").map((x) => x.trim());
+      return titleCase(no ? no + " " + ap : ap);
+    }
+    const w = t.split(" ");
+    if (w.length < 2) return titleCase(t);
+    return titleCase(w.slice(1).join(" ") + " " + w[0]);
+  }
+
+  function ivaNorm(raw) {
+    const t = norm(raw || "");
+    if (!t) return "";
+    if (t.includes("CONSUMIDOR")) return "Consumidor final";
+    if (t.includes("MONOTRIB") || t.includes("RESPONSABLE MONO")) return "Monotributista";
+    if (t.includes("INSCRIPTO")) return "Responsable inscripto";
+    if (t.includes("EXENTO")) return "Exento";
+    return titleCase(String(raw).trim());
+  }
+
+  function buildLines(items, tol = 3) {
+    const sorted = [...items].sort((a, b) => a.p - b.p || a.y - b.y || a.x - b.x);
+    const lines = [];
+    for (const it of sorted) {
+      const last = lines[lines.length - 1];
+      if (last && last.p === it.p && Math.abs(last.y - it.y) <= tol) last.items.push(it);
+      else lines.push({ p: it.p, y: it.y, items: [it] });
+    }
+    for (const l of lines) {
+      l.items.sort((a, b) => a.x - b.x);
+      l.text = l.items.map((i) => i.s).join(" ").replace(/\s+/g, " ").trim();
+    }
+    return lines;
+  }
+
+  function detect(items) {
+    const all = norm(items.map((i) => i.s).join(" "));
+    if (all.includes("FEDERACION PATRONAL")) return "fp";
+    if (all.includes("MERCANTIL ANDINA") || all.includes("COBERTURAS COTIZADAS")) return "mercantil";
+    if (all.includes("ALLIANZ")) return "allianz";
+    if (all.includes("OFERTA COTIZADA") || all.includes("SANCOR")) return "sancor";
+    return null;
+  }
+
+  // ---------- clasificación genérica por coberturas ----------
+  const NIVEL_RANK = { "Responsabilidad civil": 0, "Terceros": 1, "Terceros completo": 2, "Terceros completo full": 3, "Todo riesgo": 4 };
+  function nivelDesdeCov(c) {
+    const on = (k) => c[k] && c[k] !== "" && c[k] !== "Consultar";
+    if (on("danios")) return "Todo riesgo";
+    if (on("granizo")) return "Terceros completo full";
+    if (on("robo_parcial")) return "Terceros completo";
+    if (on("robo_total") || on("inc_total") || on("acc_total")) return "Terceros";
+    return "Responsabilidad civil";
+  }
+  function descDesdeCov(c, franq) {
+    const on = (k) => c[k] && c[k] !== "" && c[k] !== "Consultar";
+    if (on("danios")) return franq ? "Todo riesgo con franquicia de " + fmtInt(franq) : "Todo riesgo con franquicia";
+    if (on("granizo")) {
+      const sinDed = /sin deducible/i.test(c.granizo || "");
+      const parts = ["granizo"];
+      if (on("inundacion")) parts.push("inundación");
+      if (on("cristales")) parts.push("cristales");
+      if (on("ruedas")) parts.push("robo de rueda");
+      if (on("rastreo")) parts.push("rastreo");
+      const lista = parts.slice(0, 3);
+      const txt = lista.length > 1 ? lista.slice(0, -1).join(", ") + " y " + lista[lista.length - 1] : lista[0];
+      return (sinDed ? "Sin deducibles: " : "Incluye ") + txt;
+    }
+    if (on("robo_parcial")) {
+      const extra = [];
+      if (on("cristales")) extra.push("cristales");
+      if (on("ruedas")) extra.push("robo de rueda");
+      return extra.length ? "Completo con " + extra.join(" y ") : "Robo e incendio total y parcial";
+    }
+    const tot = [];
+    if (on("inc_total")) tot.push(on("inc_parcial") ? "incendio total y parcial" : "incendio");
+    if (on("robo_total")) tot.push("robo");
+    if (on("acc_total")) tot.push("accidente");
+    if (tot.length) {
+      const t = tot.length > 1 ? tot.slice(0, -1).join(", ") + " y " + tot[tot.length - 1] : tot[0];
+      return (t.charAt(0).toUpperCase() + t.slice(1) + " total").replace("parcial total", "parcial");
+    }
+    return "Solo responsabilidad civil";
+  }
+
+  // ---------- Federación Patronal ----------
+  function parseFP(items) {
+    const lines = buildLines(items);
+    const T = lines.map((l) => l.text);
+    const find = (re) => { for (const t of T) { const m = t.match(re); if (m) return m; } return null; };
+    const field = (key) => { // "MODELO 1059 VW TAOS ..." -> resto despues del codigo
+      const m = find(new RegExp("^" + key + "\\s+(\\S+)\\s+(.*)$", "i"));
+      return m ? { code: m[1], val: m[2].trim() } : null;
+    };
+    const avisos = [];
+    const fecha = (find(/Fecha\s*:\s*(\d{2}\/\d{2}\/\d{4})/) || [])[1] || "";
+    const solicitante = ((find(/Solicitante:\s*(?:\d+\s*-\s*)?(.+?)(\s+Posicion|$)/i) || [])[1] || "").trim();
+    const localidad = ((find(/Localidad:\s*\d+\s*-\s*(.+)$/i) || [])[1] || "").trim();
+    const moto = !!find(/Seccion:\s*MOTO/i);
+    const iva = ivaNorm((find(/Posicion I\.?V\.?A\.?:\s*(.+)$/i) || [])[1]);
+    const modelo = field("MODELO");
+    const anio = field("AÑO") || field("ANO");
+    const vehTipo = field("VEHICULOS");
+    const planM = find(/PLAN:\s*([A-Z0-9]+)\s*-\s*(.*?)(\s+Limite Resp|$)/i);
+    const rcM = find(/Limite Resp\.?\s*Civil\s*\$\s*([\d,.]+)/i);
+    let sa = null;
+    for (let i = 0; i < T.length; i++) {
+      if (/^PLAN\s/i.test(T[i]) && /\d[\d,]*\.\d{2}\s*$/.test(T[i])) { sa = numUS(T[i].match(/([\d,]+\.\d{2})\s*$/)[1]); break; }
+    }
+    const cuotaM = find(/(\d+)\s*cuotas?\s+de\s+\$\s*([\d.,]+)/i);
+    const contadoM = find(/contado,?\s*el monto es de\s*\$\s*([\d.,]+)/i);
+    const vida = !!find(/VIDA MODULAR/i);
+    const franqDesc = field("DESCRIPCION FRANQUICIA");
+    const franqPct = field("FRANQUICIA POR DAÑO") || field("FRANQUICIA POR DANO");
+    const cadi = find(/CADI[^A-Z]*\(TALLER\)\s+\S+\s+(.*)$/i);
+    const grua = field("SERVICIO DE GRUA");
+    const casco = field("CASCO CONOSUR");
+    const ajuste = field("AJUSTE AUTOMATICO SUMA ASEG.");
+    const rastreador = field("RASTREADOR VEHICULAR");
+    if (find(/SUSCRIPCI[OÓ]N NO AUTORIZADA/i)) avisos.push("Federación Patronal: la cotización tiene la leyenda de suscripción no autorizada.");
+
+    const code = planM ? planM[1].toUpperCase() : "?";
+    if (/^A/.test(code) || (sa && rcM && sa === numUS(rcM[1]))) sa = null;
+    const rc = rcM ? numUS(rcM[1]) : null;
+    const nCuotas = cuotaM ? parseInt(cuotaM[1], 10) : 1;
+    const cuotaRaw = cuotaM ? cuotaM[2].replace(/\.$/, "") : null;
+    const cuota = cuotaRaw ? (cuotaRaw.includes(",") ? numAR(cuotaRaw) : numUS(cuotaRaw)) : null;
+    let franq = null;
+    if (franqDesc && /\$/.test(franqDesc.val)) franq = numAR(franqDesc.val);
+    const pctM = franqPct && franqPct.val.match(/(\d+)\s*%/);
+    const pct = pctM ? pctM[1] : null;
+
+    const isA = /^A/.test(code);
+    const isB = /^(B|LB)/.test(code);
+    const isC = /^C/.test(code) && code !== "CF";
+    const isCF = code === "CF";
+    const isTD = /^TD/.test(code);
+    const amplio = !isA;
+    const c = {};
+    c.rc = rc ? fmtInt(rc) : OK;
+    c.inc_total = (isA || code === "B0") ? "" : OK;
+    c.robo_total = (isA || code === "B3") ? "" : OK;
+    c.acc_total = (isA || code === "B1" || code === "B0" || code === "B3") ? "" : OK;
+    c.inc_parcial = (isC || isCF || isTD || code === "B3") ? OK : "";
+    c.robo_parcial = (isC || isCF || isTD) ? OK : "";
+    c.danios = isTD ? OK + (franq ? " franq. " + fmtInt(franq) : "") : "";
+    c.franq_robo = (isC || isCF || isTD) ? "Consultar" : "";
+    c.granizo = (isCF || isTD) ? OK : "";
+    c.inundacion = (isCF || isTD) ? "Consultar" : "";
+    c.huelga = amplio ? "Consultar" : "";
+    c.cristales = moto ? "" : isC ? OK + " 1 evento por póliza" : (isCF || isTD) ? OK : "";
+    c.amparo = (isC || isCF || isTD) ? "Consultar" : "";
+    c.ruedas = (!moto && (isC || isCF || isTD)) ? "1 rueda por póliza" : "";
+    c.rastreo = rastreador && /^S/i.test(rastreador.code) ? OK : "";
+    c.auxilio = grua && /^S/i.test(grua.code) ? OK + " con grúa" : "";
+    c.legal = isA ? "Solo RC en limítrofes" : (casco && /^S/i.test(casco.code) ? OK + " con casco en limítrofes" : OK);
+    if (amplio && rc) {
+      const f = (isCF || isTD) ? 0.01 : 0.005;
+      c.ap = fmtInt(rc * f) + " (muerte)";
+    } else c.ap = "";
+    c.gestoria = amplio ? OK + " robo y destrucción total" : "";
+    c.taller = cadi ? (/NO EXCLUSIVO/i.test(cadi[1]) ? "A elección" : "Red de la compañía") : "";
+    if (ajuste) {
+      const am = ajuste.val.match(/(\d+)\s*%/);
+      c.ajuste = am ? "Hasta " + am[1] + "%" : "No";
+    } else c.ajuste = "";
+    c.adicional = vida ? "Seguro de vida (Vida Modular)" : "";
+
+    let plan = code;
+    if (isTD && pct) plan = code + " · franquicia " + pct + "%";
+    const nivel = isTD ? "Todo riesgo" : isCF ? "Terceros completo full" : isC ? "Terceros completo" : isB ? "Terceros" : isA ? "Responsabilidad civil" : nivelDesdeCov(c);
+    let desc = descDesdeCov(c, franq);
+    if (isCF) desc = "Incluye granizo, cristales y robo de rueda";
+    const opcion = {
+      cia: "Federación Patronal", plan, nivel, desc, cuota, sa, rc, franq, cov: c,
+      pago: nCuotas > 1 ? nCuotas + " cuotas" : "", contado: contadoM ? numUS(contadoM[1].replace(/\.$/, "")) : null,
+    };
+    if (vehTipo && /PICK|UTIL/i.test(vehTipo.val) === false) { /* sin aviso */ }
+    return {
+      cia: "Federación Patronal", fecha, solicitante: nombreNatural(solicitante), iva,
+      vehiculo: {
+        modelo: modelo ? titleCase(cleanModel(modelo.val)) : "",
+        anio: anio ? anio.val.replace(/\D.*$/, "") : "",
+        uso: "Particular",
+        radicacion: localidad ? titleCase(localidad) : "",
+        moto,
+      },
+      vigencia: "El valor puede variar si la póliza se emite en otro mes (percepción de Ingresos Brutos PBA).",
+      opciones: [opcion], avisos,
+    };
+  }
+
+  // ---------- Sancor ----------
+  function parseSancor(items) {
+    const lines = buildLines(items);
+    const T = lines.map((l) => l.text);
+    const find = (re) => { for (const t of T) { const m = t.match(re); if (m) return m; } return null; };
+    const avisos = [];
+    // Datos del vehículo (página 1)
+    let modelo = "";
+    for (let i = 0; i < lines.length; i++) {
+      const it = lines[i].items.find((x) => /^Marca\/Modelo:/i.test(x.s));
+      if (it) {
+        const rest = lines[i].items.filter((x) => x.x > it.x && x.x < 230 && x !== it).map((x) => x.s).join(" ");
+        const inline = it.s.replace(/^Marca\/Modelo:\d?\s*/i, "");
+        modelo = (inline + " " + rest).trim();
+        const nx = lines[i + 1];
+        if (nx && nx.p === lines[i].p && nx.items[0] && nx.items[0].x < 120 && !/:/.test(nx.items[0].s)) modelo += " " + nx.items[0].s;
+        break;
+      }
+    }
+    const pick = (label) => {
+      for (const l of lines) {
+        const idx = l.items.findIndex((x) => norm(x.s).startsWith(norm(label)));
+        if (idx >= 0) {
+          const own = l.items[idx].s.slice(label.length).replace(/^\d\b\s*/, "").trim();
+          if (own) return own;
+          const nxt = l.items[idx + 1];
+          return nxt && nxt.x < 300 ? nxt.s.trim() : "";
+        }
+      }
+      return "";
+    };
+    const holaM = find(/^Hola,\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ,.'-]{3,}?)(\s+¡|$)/);
+    const solicitante = holaM ? nombreNatural(holaM[1]) : "";
+    const ivaM = find(/(?:Condici[oó]n (?:de|frente al) IVA|Posici[oó]n (?:de |frente al )?IVA|Pos\.? ?IVA)\s*:?\s*(.+)$/i);
+    const iva = ivaM ? ivaNorm(ivaM[1]) : "";
+    const tipo = pick("Tipo:");
+    const anio = pick("Año Modelo:");
+    const origen = pick("Origen:");
+    const uso = pick("Uso:");
+    const ubic = pick("Ubicación del Riesgo:");
+    const saM = find(/Suma asegurada total:?\s*\$\s*([\d.,]+)/i);
+    const sa = saM ? numAR(saM[1]) : null;
+    const fechaM = find(/,\s*(\d{1,2}) de ([A-Za-zé]+) de (\d{4})/);
+    const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    let fecha = "", finMes = "";
+    if (fechaM) {
+      const mi = MESES.indexOf(fechaM[2].toLowerCase());
+      if (mi >= 0) {
+        fecha = String(fechaM[1]).padStart(2, "0") + "/" + String(mi + 1).padStart(2, "0") + "/" + fechaM[3];
+        const last = new Date(+fechaM[3], mi + 1, 0).getDate();
+        finMes = last + "/" + String(mi + 1).padStart(2, "0") + "/" + fechaM[3];
+      }
+    }
+    if (/pick/i.test(tipo)) avisos.push("Sancor cargó el vehículo como \"" + tipo + "\". Revisá que el tipo sea correcto.");
+
+    // Tabla de detalle: columnas por "Oferta Cotizada:"
+    const ofertaItems = items.filter((x) => /^Oferta Cotizada:/i.test(x.s));
+    if (!ofertaItems.length) return parseSancorSimple(items, lines, { modelo, tipo, anio, origen, uso, ubic, sa, fecha, finMes, avisos, solicitante, iva });
+    const p0 = Math.min(...ofertaItems.map((x) => x.p));
+    const heads = ofertaItems.filter((x) => x.p === p0).sort((a, b) => a.x - b.x);
+    const headY = heads[0].y;
+    const colX = heads.map((h) => h.x + 30);
+    const nearestCol = (x) => { let b = 0, d = 1e9; colX.forEach((c, i) => { const dd = Math.abs(c - x); if (dd < d) { d = dd; b = i; } }); return b; };
+    const nombres = colX.map(() => "");
+    const cuotas = colX.map(() => null);
+    items.filter((x) => x.p === p0 && x.y > headY && x.y < headY + 20 && x.x > 190 && /"/.test(x.s))
+      .forEach((x) => { const i = nearestCol(x.x); nombres[i] = (nombres[i] + " " + x.s).replace(/"/g, "").trim(); });
+    const MONEY = /^\$?\s*[\d.]+,\d{2}$/;
+    items.filter((x) => x.p === p0 && /Importe Mensual/i.test(x.s)).forEach((im) => {
+      const inl = im.s.match(/\$\s*([\d.]+,\d{2})/);
+      let val = inl ? numAR(inl[1]) : null, vx = im.x + 40;
+      if (val == null) {
+        const v = items.filter((x) => x.p === p0 && x.y > im.y && x.y <= im.y + 25 && Math.abs(x.x - im.x) < 60 && MONEY.test(x.s.trim()))
+          .sort((a, b) => a.y - b.y)[0];
+        if (v) { val = numAR(v.s); vx = v.x; }
+      }
+      if (val != null) { const k = nearestCol(vx); if (cuotas[k] == null) cuotas[k] = val; }
+    });
+    // Respaldo: importes del resumen de la primera página, en el mismo orden que las columnas
+    if (cuotas.some((c) => c == null)) {
+      const res = items.filter((x) => x.p === 1 && MONEY.test(x.s.trim()) && items.some((im) => im.p === 1 && /Importe Mensual/i.test(im.s) && x.y > im.y && x.y <= im.y + 25 && Math.abs(x.x - im.x) < 60));
+      const seen = new Set();
+      const vals = res.sort((a, b) => a.y - b.y || a.x - b.x).filter((x) => { const k = Math.round(x.x) + ":" + Math.round(x.y); if (seen.has(k)) return false; seen.add(k); return true; })
+        .sort((a, b) => Math.round(a.y / 10) - Math.round(b.y / 10) || a.x - b.x).map((x) => numAR(x.s));
+      if (vals.length === cuotas.length) vals.forEach((v, k) => { if (cuotas[k] == null) cuotas[k] = v; });
+    }
+
+    // Filas
+    const tableLines = lines.filter((l) => l.p > p0 || (l.p === p0 && l.y > headY + 25));
+    const rows = [];
+    let cur = null;
+    for (const l of tableLines) {
+      const labelItems = l.items.filter((x) => x.x < 190);
+      const valItems = l.items.filter((x) => x.x >= 190);
+      const label = labelItems.map((x) => x.s).join(" ").trim();
+      if (/^(\*|Especificaciones|Incluye sistema|Franquicia\/Deduc|Cobertura de Ruedas|Contempla|La presente|Aclaraci|Los valores|SITIO|PARA ACCEDER|Prevenci)/i.test(label)) { cur = null; if (/Especificaciones/i.test(label)) break; continue; }
+      if (/^(AUTOMOTORES|Cotizaci[oó]n|Sucursal|Detalle de Coberturas)/i.test(label) && !valItems.length) continue;
+      if (valItems.length && label) {
+        cur = { label, vals: colX.map(() => "") };
+        valItems.forEach((v) => { const i = nearestCol(v.x); cur.vals[i] = (cur.vals[i] + " " + v.s).trim(); });
+        rows.push(cur);
+      } else if (!valItems.length && label && cur) {
+        cur.label += " " + label;
+      } else if (valItems.length && !label && cur) {
+        valItems.forEach((v) => { const i = nearestCol(v.x); cur.vals[i] = (cur.vals[i] + " " + v.s).trim(); });
+      }
+    }
+    const allText = T.join(" ");
+    const importado = /import/i.test(origen);
+    const robMin = importado ? "2%" : "1%", robMax = importado ? "6%" : "3%";
+    const ajusteM = allText.match(/Ajuste Autom[aá]tico Sumas Aseguradas hasta el\s*(\d+)\s*%/i);
+    const rastreoTexto = /Incluye sistema de rastreo/i.test(allText);
+
+    const get = (re, i) => { const r = rows.find((rw) => re.test(norm(rw.label))); return r ? r.vals[i] : null; };
+    const si = (v) => v != null && /^SI\b/i.test(v.trim());
+
+    const opciones = colX.map((_, i) => {
+      const c = {};
+      const rcv = get(/^RESPONSABILIDAD CIVIL/, i);
+      const rc = rcv ? numAR(rcv) : null;
+      c.rc = rc ? fmtInt(rc) : (rcv ? OK : "");
+      c.inc_total = si(get(/^INCENDIO TOTAL/, i)) ? OK : "";
+      c.inc_parcial = si(get(/^INCENDIO PARCIAL/, i)) ? OK : "";
+      c.robo_total = si(get(/^ROBO.*TOTAL/, i)) ? OK : "";
+      c.robo_parcial = si(get(/^ROBO.*PARCIAL/, i)) ? OK : "";
+      c.acc_total = si(get(/^ACCIDENTE TOTAL/, i)) || si(get(/^DESTRUCCION TOTAL/, i)) ? OK : "";
+      const dp = get(/^ACCIDENTE PARCIAL/, i);
+      const franq = dp && /\$/.test(dp) ? numAR(dp) : null;
+      c.danios = franq ? OK + " franq. " + fmtInt(franq) : "";
+      const nombre = nombres[i] || "Opción " + (i + 1);
+      const premium = /premium/i.test(nombre);
+      c.franq_robo = c.robo_parcial ? (premium ? "Sin franquicia" : "10% (mín. " + robMin + " / máx. " + robMax + ")") : "";
+      const sinDed = (re) => { const r = rows.find((rw) => re.test(norm(rw.label))); return r && /SIN DEDUCIBLE/.test(norm(r.label)); };
+      c.granizo = si(get(/^GRANIZO/, i)) ? OK + (sinDed(/^GRANIZO/) ? " sin deducible ni límite" : "") : "";
+      const inu = si(get(/^INUNDACION/, i)), ter = si(get(/^TERREMOTO/, i));
+      c.inundacion = inu || ter ? OK + (sinDed(/^INUNDACION/) ? " sin deducible ni límite" : "") + (inu && !ter ? " (sin terremoto)" : "") : "";
+      c.huelga = si(get(/^HUELGA/, i)) ? OK : "";
+      const cri = si(get(/CRISTALES/, i)), cer = si(get(/CERRADURA/, i));
+      c.cristales = cri || cer ? OK + (sinDed(/CERRADURA/) || /SIN LIMITE/.test(norm((rows.find((r) => /CRISTALES/.test(norm(r.label))) || {}).label || "")) ? " sin deducible ni límite" : "") + (cri && !cer ? " (sin cerraduras)" : "") : "";
+      c.amparo = si(get(/AMPARO DE ROBO/, i)) ? OK + " sin límite" : "";
+      c.ruedas = "";
+      const ras = get(/RASTREO/, i);
+      c.rastreo = (ras != null ? si(ras) : rastreoTexto) ? OK : "";
+      const asis = get(/^ASISTENCIA AL VEHICULO/, i);
+      c.auxilio = asis && !/^NO/i.test(asis.trim()) ? OK : "";
+      c.legal = si(get(/^ASISTENCIA LEGAL/, i)) || si(get(/LIMITROFES/, i)) ? OK : "";
+      c.ap = si(get(/^ACCIDENTES PERSONALES/, i)) || si(get(/^MUERTE ACCIDENTAL/, i)) ? OK + " muerte e invalidez" : "";
+      c.gestoria = si(get(/GESTORIA/, i)) ? OK : "";
+      c.taller = "Consultar";
+      c.ajuste = ajusteM ? "Hasta " + ajusteM[1] + "%" : "";
+      c.adicional = "";
+      const nivel = nivelDesdeCov(c);
+      let plan = nombre;
+      const pctM = dp && dp.match(/(\d+)\s*%/);
+      if (franq && pctM) plan = nombre + " · franquicia " + pctM[1] + "%";
+      return { cia: "Sancor Seguros", plan, nivel, desc: descDesdeCov(c, franq), cuota: cuotas[i], sa, rc, franq, cov: c, pago: "", contado: null };
+    });
+    return {
+      cia: "Sancor Seguros", fecha, solicitante, iva,
+      vehiculo: { modelo: titleCase(cleanModel(modelo)), anio, uso: uso || "Particular", radicacion: titleCase(ubic.replace(/^\d+\s*-\s*/, "")), moto: /moto/i.test(tipo) },
+      vigencia: finMes ? "Sancor Seguros: cotización válida hasta el " + finMes + "." : "",
+      tipo, opciones, avisos,
+    };
+  }
+
+  // Formato de una sola oferta con lista de coberturas (ej. combos)
+  function parseSancorSimple(items, lines, d) {
+    const idx = items.findIndex((x) => /^Oferta Cotizada\s*$/i.test(x.s.trim()));
+    if (idx < 0) throw new Error("No encontré las ofertas de Sancor en este PDF.");
+    const of = items[idx];
+    const nameIt = items.filter((x) => x.p === of.p && x.y > of.y && x.y < of.y + 30 && Math.abs(x.x - of.x) < 20)[0];
+    const nombre = nameIt ? nameIt.s.trim() : "Oferta";
+    const imp = items.find((x) => /Importe Mensual:\s*\$/.test(x.s));
+    const cuota = imp ? numAR(imp.s.split("$")[1]) : null;
+    const covHead = items.find((x) => /COBERTURAS Y BENEFICIOS/i.test(x.s));
+    const txt = norm(items.filter((x) => covHead && x.p === covHead.p && x.y > covHead.y && x.x > covHead.x - 10).map((x) => x.s).join(" "));
+    const allT = norm(lines.map((l) => l.text).join(" "));
+    const has = (re) => re.test(txt);
+    const rcIt = lines.find((l) => /^Suma asegurada\s*\$\s*[\d.]+,\d{2}$/i.test(l.text) && numAR(l.text) > 50000000);
+    const rc = rcIt ? numAR(rcIt.text) : null;
+    const c = {};
+    c.rc = rc ? fmtInt(rc) : OK;
+    c.inc_total = has(/INCENDIO TOTAL/) ? OK : "";
+    c.inc_parcial = has(/INCENDIO PARCIAL/) ? OK : "";
+    c.robo_total = has(/ROBO Y\/O HURTO TOTAL/) ? OK : "";
+    c.robo_parcial = has(/ROBO Y\/O HURTO PARCIAL/) ? OK : "";
+    c.acc_total = has(/ACCIDENTE TOTAL|DESTRUCCION TOTAL/) ? OK : "";
+    c.danios = "";
+    const premium = /premium/i.test(nombre);
+    c.franq_robo = c.robo_parcial ? (premium ? "Sin franquicia" : "Consultar") : "";
+    c.granizo = has(/GRANIZO/) ? OK + " sin deducible ni límite" : "";
+    c.inundacion = has(/INUNDACION/) ? OK + " sin deducible ni límite" : "";
+    c.huelga = has(/HUELGA/) ? OK : "";
+    c.cristales = has(/CRISTALES/) ? OK + " sin deducible ni límite" : "";
+    c.amparo = has(/AMPARO DE ROBO/) ? OK + " sin límite" : "";
+    c.ruedas = "";
+    c.rastreo = /INCLUYE SISTEMA DE RASTREO/.test(allT) ? OK : "";
+    c.auxilio = has(/ASISTENCIA AL VEHICULO/) ? OK : "";
+    c.legal = has(/ASISTENCIA LEGAL|LIMITROFES/) ? OK : "";
+    c.ap = has(/ACCIDENTES PERSONALES|MUERTE ACCIDENTAL/) ? OK + " muerte e invalidez" : "";
+    c.gestoria = has(/GESTORIA/) ? OK : "";
+    c.taller = "Consultar";
+    const aj = allT.match(/AJUSTE AUTOMATICO SUMAS ASEGURADAS HASTA EL\s*(\d+)\s*%/);
+    c.ajuste = aj ? "Hasta " + aj[1] + "%" : "";
+    const hogar = /COMBINADO FAMILIAR|HOGAR/.test(allT);
+    c.adicional = hogar ? "Seguro de hogar (Combinado Familiar)" : "";
+    return {
+      cia: "Sancor Seguros", fecha: d.fecha, solicitante: d.solicitante || "", iva: d.iva || "",
+      vehiculo: { modelo: titleCase(cleanModel(d.modelo)), anio: d.anio, uso: d.uso || "Particular", radicacion: titleCase((d.ubic || "").replace(/^\d+\s*-\s*/, "")), moto: /moto/i.test(d.tipo) },
+      vigencia: d.finMes ? "Sancor Seguros: cotización válida hasta el " + d.finMes + "." : "",
+      tipo: d.tipo,
+      opciones: [{ cia: "Sancor Seguros", plan: nombre.replace(/\s*\+\s*Combo$/i, " + Combo Hogar"), nivel: nivelDesdeCov(c), desc: descDesdeCov(c, null), cuota, sa: d.sa, rc, franq: null, cov: c, pago: "", contado: null }],
+      avisos: d.avisos,
+    };
+  }
+
+  // ---------- Mercantil Andina ----------
+  function parseMercantil(items) {
+    const lines = buildLines(items);
+    const T = lines.map((l) => l.text);
+    const find = (re) => { for (const t of T) { const m = t.match(re); if (m) return m; } return null; };
+    const avisos = [];
+    const fecha = (find(/FECHA:\s*(\d{2}\/\d{2}\/\d{4})/) || [])[1] || "";
+    let modelo = "";
+    const dr = lines.findIndex((l) => /Datos de riesgo/i.test(l.text));
+    if (dr >= 0 && lines[dr + 1]) modelo = lines[dr + 1].text.replace(/\s*\((Nafta|Diesel|Diésel|GNC)[^)]*\)\s*$/i, "").replace(/^([^,]+),\s*/, "$1 ");
+    const below = (label) => {
+      const it = items.find((x) => norm(x.s) === norm(label));
+      if (!it) return "";
+      const cand = items.filter((x) => x.p === it.p && x.y > it.y && x.y < it.y + 20 && Math.abs(x.x - it.x) < 15);
+      return cand.length ? cand[0].s : "";
+    };
+    const anio = below("AÑO DE FABRICACIÓN");
+    const iva = ivaNorm(below("CONDICIÓN DE IVA"));
+    const ubic = below("UBICACIÓN DEL RIESGO");
+    const sa = numAR(below("SUMA ASEGURADA"));
+    const uso = below("USO") || "Particular";
+    let vigHasta = "";
+    if (fecha) {
+      const [d, m, y] = fecha.split("/").map(Number);
+      const dt = new Date(y, m - 1, d + 7);
+      vigHasta = String(dt.getDate()).padStart(2, "0") + "/" + String(dt.getMonth() + 1).padStart(2, "0") + "/" + dt.getFullYear();
+    }
+    const anchors = items.filter((x) => /^Cobertura\s+\S/i.test(x.s.trim()) && !/cotizadas/i.test(x.s)).sort((a, b) => a.p - b.p || a.y - b.y);
+    const covItems = items.filter((x) => x.x > 200 && !/^Cobertura/i.test(x.s) && !/^\d+$/.test(x.s.trim()));
+    const opciones = anchors.map((a) => {
+      const nombre = a.s.replace(/^Cobertura\s+/i, "").trim();
+      const precio = items.filter((x) => x.p === a.p && x.y > a.y && x.y < a.y + 70 && x.x < 200 && /^\$[\d.]+,\d{2}$/.test(x.s.trim()))
+        .sort((p, q) => p.y - q.y)[0];
+      const mine = covItems.filter((x) => {
+        if (x.p !== a.p) return false;
+        const same = anchors.filter((b) => b.p === a.p);
+        let best = null, d = 1e9;
+        same.forEach((b) => { const dd = Math.abs(b.y - x.y); if (dd < d) { d = dd; best = b; } });
+        return best === a;
+      }).map((x) => norm(x.s));
+      const has = (re) => mine.some((s) => re.test(s));
+      const c = {};
+      c.rc = has(/RESPONSABILIDAD CIVIL/) ? OK : "";
+      c.inc_total = has(/^INCENDIO TOTAL/) ? OK : "";
+      c.inc_parcial = has(/^INCENDIO PARCIAL/) ? OK : "";
+      c.robo_total = has(/^ROBO TOTAL/) ? OK : "";
+      c.robo_parcial = has(/^ROBO PARCIAL/) ? OK : "";
+      c.acc_total = has(/DESTRUCCION TOTAL/) ? OK : "";
+      c.danios = has(/DANOS PARCIALES|TODO RIESGO|ACCIDENTE PARCIAL/) ? OK : "";
+      c.franq_robo = c.robo_parcial ? "Consultar" : "";
+      c.granizo = has(/^GRANIZO/) ? OK : "";
+      c.inundacion = has(/^INUNDACION/) ? OK : "";
+      c.huelga = "";
+      const cri = has(/CRISTALES|LUNETAS|PARABRISAS/), cer = has(/CERRADURAS/);
+      c.cristales = cri || cer ? OK + (cri && !cer ? " (sin cerraduras)" : "") : "";
+      c.amparo = c.robo_parcial ? "Consultar" : "";
+      c.ruedas = "";
+      c.rastreo = "";
+      const amplio = !/^A$/i.test(nombre);
+      c.auxilio = amplio ? "Consultar" : "";
+      c.legal = amplio ? "Consultar" : "";
+      c.ap = amplio ? "Consultar" : "";
+      c.gestoria = amplio ? "Consultar" : "";
+      c.taller = "";
+      c.ajuste = "";
+      c.adicional = "";
+      return { cia: "Mercantil Andina", plan: titleCase(nombre).replace(/^M /, "M "), nivel: nivelDesdeCov(c), desc: descDesdeCov(c, null), cuota: precio ? numAR(precio.s) : null, sa, rc: null, franq: null, cov: c, pago: "", contado: null };
+    });
+    if (opciones.length) avisos.push("Mercantil Andina no informa el límite de RC ni los topes de cristales y granizo en la cotización: revisalos con el cuadro de beneficios.");
+    return {
+      cia: "Mercantil Andina", fecha, solicitante: "", iva,
+      vehiculo: { modelo: titleCase(cleanModel(modelo)), anio, uso, radicacion: ubic.replace(/,\s*Buenos Aires$/i, "").replace(/\s*\(\d{4}\)/, "").trim(), moto: false },
+      vigencia: vigHasta ? "Mercantil Andina: cotización válida por 7 días (hasta el " + vigHasta + ")." : "",
+      opciones, avisos,
+    };
+  }
+
+  // ---------- Allianz ----------
+  function parseAllianz(items) {
+    const lines = buildLines(items);
+    const T = lines.map((l) => l.text);
+    const find = (re) => { for (const t of T) { const m = t.match(re); if (m) return m; } return null; };
+    const all = T.join(" ");
+    const N = norm(all);
+    const avisos = [];
+    const fecha = (find(/FECHA:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1] || "";
+    const nombre = ((find(/^Nombre:\s*(.+?)(\s+Tipo Doc:|$)/i) || [])[1] || "").trim();
+    const localidad = ((find(/^Localidad:\s*(.+?)(\s+Pos\.?IVA:|$)/i) || [])[1] || "").trim();
+    const tipo = ((find(/^Tipo:\s*(.+?)(\s+Chasis:|$)/i) || [])[1] || "").trim();
+    const iva = ivaNorm((find(/Pos\.?\s*IVA:\s*(.+)$/i) || [])[1]);
+    const uso = ((find(/^Uso:\s*(.+?)(\s+Zona Riesgo:|$)/i) || [])[1] || "").trim();
+    const marcaM = find(/^Marca:\s*(.+?)(\s+Suma Asegurada:\s*([\d.,]+))?$/i);
+    let modelo = marcaM ? marcaM[1] : "";
+    modelo = modelo.replace(/\.?L\/\d{2}\b/i, " ").replace(/-\s*(NAC|IMP)\.?\s*$/i, "").replace(/\s+/g, " ").trim();
+    const sa = marcaM && marcaM[3] ? numAR(marcaM[3]) : (find(/Suma Asegurada:\s*([\d.,]+)/i) ? numAR(find(/Suma Asegurada:\s*([\d.,]+)/i)[1]) : null);
+    const anio = ((find(/^Modelo:\s*(\d{4})/i) || [])[1] || "");
+    const ajM = find(/Cl[aá]usula de Ajuste:\s*(\d+)\s*%/i);
+    const ajuste = ajM ? (+ajM[1] > 0 ? "Hasta " + ajM[1] + "%" : "No") : "";
+    const rcM = all.match(/Responsabilidad Civil[^$]*\$\s*([\d.]+)/i);
+    const rc = rcM ? numAR(rcM[1]) : null;
+    const apM = all.match(/Accidentes personales[^$]*conductor hasta \$\s*([\d.]+)/i);
+    const localizador = /LOCALIZADOR/.test(N);
+    if (/SUJETO A LA INSTALACION DE UN LOCALIZADOR/.test(N)) avisos.push("Allianz: la cobertura queda sujeta a la instalación de un localizador satelital.");
+    if (/PICK/i.test(tipo)) avisos.push("Allianz cargó el vehículo como \"" + titleCase(tipo) + "\". Revisá que el tipo sea correcto.");
+    const nat = /SIN FRANQUICIA/.test(N) && /GRANIZO O TERREMOTO O INUNDACION/.test(N);
+    const sust = all.match(/Veh[ií]culo sustituto por (\d+) d[ií]as/i);
+    const opciones = [];
+    lines.forEach((l) => {
+      const m = l.text.match(/^(\d+)\s*-\s*(.+?)\s+\$\s*([\d.]+,\d{2})\s+\$\s*([\d.]+,\d{2})$/);
+      if (!m) return;
+      const raw = m[2].trim();
+      const code = (raw.match(/^([A-Z]\d*)\b/) || [])[1] || raw.split(" ")[0];
+      const letra = code.charAt(0).toUpperCase();
+      const pctM = raw.match(/-\s*(\d+(?:[.,]\d+)?)\s*%/);
+      const conGranizo = /C\/GRANIZO/i.test(raw);
+      const prod = raw.replace(/^[A-Z]\d*\s+/, "").replace(/\s*-\s*\d+(?:[.,]\d+)?\s*%/, "").replace(/\s*-\s*C\/GRANIZO/i, "").replace(/\s*-\s*S\/GRANIZO/i, "").trim();
+      const isA = letra === "A", isB = letra === "B", isC = letra === "C", isD = letra === "D";
+      const amplio = isC || isD;
+      const franq = isD && pctM && sa ? sa * parseFloat(pctM[1].replace(",", ".")) / 100 : null;
+      const c = {};
+      c.rc = rc ? fmtInt(rc) : OK;
+      c.inc_total = isA ? "" : OK;
+      c.robo_total = isA ? "" : OK;
+      c.acc_total = isA ? "" : OK;
+      c.inc_parcial = amplio ? OK : "";
+      c.robo_parcial = amplio ? OK : "";
+      c.danios = isD ? OK + (franq ? " franq. " + fmtInt(franq) : "") : "";
+      c.franq_robo = amplio ? (/SIN FRANQUICIA PARA ROBO/.test(N) ? "Sin franquicia" : "Consultar") : "";
+      c.granizo = amplio && (conGranizo || isD) ? OK + (nat ? " sin franquicia" : "") : "";
+      c.inundacion = amplio && (conGranizo || isD) && /INUNDACION/.test(N) ? OK + (nat ? " sin franquicia" : "") : "";
+      c.huelga = amplio ? "Consultar" : "";
+      const cri = /PARABRISAS/.test(N), cer = /CERRADURAS/.test(N);
+      c.cristales = amplio && (cri || cer) ? OK + (/UNO O VARIOS EVENTOS/.test(N) ? " varios eventos" : "") : "";
+      c.amparo = amplio && /DANOS PARCIALES A CONSECUENCIA DE ROBO/.test(N) ? OK + " hasta la suma asegurada" : "";
+      c.ruedas = "";
+      c.rastreo = localizador ? "Requiere localizador" : "";
+      c.auxilio = /ASISTENCIA|AUXILIO MECANICO/.test(N) && !isA ? OK : "";
+      c.legal = /LIMITROFES/.test(N) ? OK + (/DEFENSA PENAL/.test(N) ? " y defensa penal" : "") : "";
+      c.ap = apM ? fmtInt(numAR(apM[1])) + " (muerte)" : "";
+      c.gestoria = /GESTORIA/.test(N) && !isA ? OK + " robo y destrucción total" : "";
+      c.taller = "Consultar";
+      c.ajuste = ajuste;
+      c.adicional = sust && !isA ? "Auto sustituto " + sust[1] + " días (robo)" : "";
+      let plan = code + " " + titleCase(prod).replace(/\bVip\b/, "VIP");
+      if (isD && pctM) plan = code + " · franquicia " + pctM[1] + "%";
+      const nivel = isD ? "Todo riesgo" : isC ? (conGranizo ? "Terceros completo full" : "Terceros completo") : isB ? "Terceros" : isA ? "Responsabilidad civil" : nivelDesdeCov(c);
+      opciones.push({ cia: "Allianz", plan, nivel, desc: descDesdeCov(c, franq), cuota: numAR(m[4]), sa, rc, franq, cov: c, pago: "", contado: null });
+    });
+    if (!opciones.length) throw new Error("No encontré las coberturas en la cotización de Allianz.");
+    return {
+      cia: "Allianz", fecha, solicitante: nombreNatural(nombre), iva,
+      vehiculo: { modelo: titleCase(modelo), anio, uso: uso ? titleCase(uso) : "Particular", radicacion: titleCase(localidad), moto: /MOTO/i.test(tipo) },
+      vigencia: "", tipo, opciones, avisos,
+    };
+  }
+
+  function parseItems(items) {
+    const tipo = detect(items);
+    if (tipo === "fp") return parseFP(items);
+    if (tipo === "sancor") return parseSancor(items);
+    if (tipo === "mercantil") return parseMercantil(items);
+    if (tipo === "allianz") return parseAllianz(items);
+    throw new Error("No reconocí la compañía de este PDF.");
+  }
+
+  async function extractItems(pdfjs, data) {
+    const doc = await pdfjs.getDocument({ data, verbosity: 0 }).promise;
+    const out = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const vp = page.getViewport({ scale: 1 });
+      const tc = await page.getTextContent();
+      for (const it of tc.items) {
+        if (!it.str || !it.str.trim()) continue;
+        out.push({ p, x: it.transform[4], y: vp.height - it.transform[5], s: it.str });
+      }
+    }
+    return out;
+  }
+
+  const api = { parseItems, extractItems, buildLines, nivelDesdeCov, descDesdeCov, NIVEL_RANK, fmtInt, numAR };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.CotParsers = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* Genera el PDF del comparativo con jsPDF + autotable. */
+(function (root) {
+  const OK = "✓";
+  const ROWS = [
+    ["rc", "Responsabilidad civil"],
+    ["inc_total", "Incendio total"], ["inc_parcial", "Incendio parcial"],
+    ["robo_total", "Robo / hurto total"], ["robo_parcial", "Robo / hurto parcial"],
+    ["acc_total", "Destrucción total por accidente"],
+    ["danios", "Daños parciales por accidente"],
+    ["franq_robo", "Franquicia en robo parcial"],
+    ["granizo", "Granizo"], ["inundacion", "Inundación y terremoto"], ["huelga", "Huelga y tumulto"],
+    ["cristales", "Cristales, luneta, parabrisas y cerraduras"],
+    ["amparo", "Daños parciales al amparo de robo total"],
+    ["ruedas", "Ruedas"], ["rastreo", "Equipo de rastreo incluido"],
+    ["auxilio", "Auxilio mecánico y remolque"], ["legal", "Asistencia legal y países limítrofes"],
+    ["ap", "Accidentes personales"], ["gestoria", "Gastos de gestoría"], ["taller", "Taller de reparación"],
+    ["ajuste", "Ajuste automático de suma asegurada"], ["adicional", "Adicional incluido"],
+  ];
+  const CIA_COLORS = {
+    "Federación Patronal": [220, 232, 245], "Sancor Seguros": [245, 220, 234], "Mercantil Andina": [221, 240, 236], "Allianz": [230, 224, 242],
+  };
+  const EXTRA_COLORS = [[239, 230, 211], [230, 224, 242], [226, 236, 214], [242, 226, 220]];
+  const NAVY = [27, 42, 74], MUTED = [107, 114, 128], LINE = [213, 218, 225], LIGHT = [242, 244, 247], TEAL = [14, 124, 123], INK = [31, 41, 55];
+
+  const money = (v, dec = true) => v == null || isNaN(v) ? "—" : "$" + Number(v).toLocaleString("es-AR", { minimumFractionDigits: dec ? 2 : 0, maximumFractionDigits: dec ? 2 : 0 });
+
+  function colorFor(cia, map) {
+    if (CIA_COLORS[cia]) return CIA_COLORS[cia];
+    if (!map[cia]) map[cia] = EXTRA_COLORS[Object.keys(map).length % EXTRA_COLORS.length];
+    return map[cia];
+  }
+
+  function matrixRows(ops) {
+    const val = (o, k) => (o.cov && o.cov[k] != null ? String(o.cov[k]) : "");
+    const out = [];
+    for (let i = 0; i < ROWS.length; i++) {
+      const [k, label] = ROWS[i];
+      if ((k === "inc_total" || k === "robo_total") && ROWS[i + 1]) {
+        const k2 = ROWS[i + 1][0];
+        if (ops.every((o) => val(o, k) === val(o, k2))) {
+          const vals = ops.map((o) => val(o, k));
+          if (vals.some((v) => v)) out.push([k === "inc_total" ? "Incendio total y parcial" : "Robo / hurto total y parcial", vals]);
+          i++;
+          continue;
+        }
+      }
+      const vals = ops.map((o) => val(o, k));
+      if (!vals.some((v) => v && v !== "Consultar")) continue;
+      out.push([label, vals]);
+    }
+    (ops[0] && ops[0].extraRows || []).forEach(() => {});
+    return out;
+  }
+
+  function build(jsPDFCtor, st) {
+    const ops = st.opciones;
+    const n = ops.length;
+    const landscape = n >= 4;
+    const doc = new jsPDFCtor({ orientation: landscape ? "landscape" : "portrait", unit: "mm", format: "a4" });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 12;
+    const CW = W - 2 * M;
+    const extraMap = {};
+    const titulo = st.vehiculo && st.vehiculo.moto ? "Comparativo de coberturas · Seguro de moto" : "Comparativo de coberturas · Seguro automotor";
+    const productor = (st.productor || "") + " · Productor Asesor de Seguros";
+
+    function header() {
+      doc.setFillColor(...NAVY); doc.rect(0, 0, W, 14, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text(titulo, M, 9);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.text(productor, W - M, 7.4, { align: "right" });
+      doc.setFontSize(7); doc.setTextColor(201, 211, 227); doc.text("Grupo Sures", W - M, 11.2, { align: "right" });
+    }
+    header();
+    let y = 26;
+    const first = (st.cliente || "").trim().split(/\s+/)[0];
+    doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+    doc.text(first ? "Hola " + first + ", estas son tus opciones" : "Estas son tus opciones", M, y);
+    y += 6;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...INK);
+    const sub = st.subtitulo || ("Opciones agrupadas por compañía. " + (landscape ? "En la página siguiente está el detalle de qué cubre cada una." : "Abajo tenés el detalle de qué cubre cada una."));
+    doc.text(sub, M, y);
+    y += 5;
+
+    // Caja del vehículo
+    const v = st.vehiculo || {};
+    const vcells = [["VEHÍCULO", v.modelo || "—"], ["AÑO", v.anio || "—"], ["USO", v.uso || "—"], ["LOCALIDAD DE GUARDA", v.radicacion || "—"], ["CONDICIÓN DE IVA", st.iva || "—"]];
+    const vw = landscape ? [0.32, 0.09, 0.13, 0.24, 0.22] : [0.31, 0.09, 0.14, 0.24, 0.22];
+    doc.setFillColor(...LIGHT); doc.setDrawColor(...LINE); doc.setLineWidth(0.2);
+    doc.rect(M, y, CW, 11, "FD");
+    let x = M;
+    vcells.forEach(([k, val], i) => {
+      doc.setFontSize(6.5); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal"); doc.text(k, x + 3, y + 4);
+      doc.setFontSize(8.5); doc.setTextColor(...INK); doc.setFont("helvetica", "bold");
+      doc.text(doc.splitTextToSize(String(val), CW * vw[i] - 5)[0], x + 3, y + 8.6);
+      x += CW * vw[i];
+    });
+    y += 15;
+
+    // Resumen
+    const showDesc = landscape;
+    const head = ["Compañía", "Nivel de cobertura", "Plan"].concat(showDesc ? ["Qué incluye"] : []).concat(["Suma asegurada", "Cuota mensual"]);
+    const body = ops.map((o, i) => {
+      const cia = (st.ranking ? (i + 1) + "º  " : "") + o.cia;
+      const row = [cia, o.nivel, o.plan];
+      if (showDesc) row.push(o.desc || "");
+      row.push(o.sa ? money(o.sa, false) : "Solo RC");
+      row.push(money(o.cuota) + (o.pago ? "\n" + o.pago : ""));
+      return row;
+    });
+    const widths = showDesc ? [0.16, 0.14, 0.19, 0.28, 0.10, 0.13] : [0.22, 0.24, 0.20, 0.16, 0.18];
+    const colStyles = {};
+    widths.forEach((w, i) => (colStyles[i] = { cellWidth: CW * w }));
+    colStyles[0].fontStyle = "bold";
+    colStyles[widths.length - 1] = Object.assign(colStyles[widths.length - 1], { fontStyle: "bold", fontSize: 10, textColor: NAVY });
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M, top: 20, bottom: 14 }, head: [head], body,
+      theme: "plain",
+      styles: { font: "helvetica", fontSize: 8.5, textColor: INK, cellPadding: { top: 2.2, bottom: 2.2, left: 2.5, right: 2 }, valign: "middle", minCellHeight: 10, lineColor: LINE, lineWidth: { bottom: 0.15 } },
+      headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8.5, minCellHeight: 9 },
+      columnStyles: colStyles,
+      tableLineColor: LINE, tableLineWidth: 0.2,
+      didParseCell: (d) => { if (d.section === "body" && d.column.index === 0) d.cell.styles.fillColor = colorFor(ops[d.row.index].cia, extraMap); },
+      didDrawPage: () => header(),
+    });
+    y = doc.lastAutoTable.finalY + 7;
+
+    function notas(yy) {
+      if (!st.notas || !st.notas.length) return yy;
+      doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      if (yy > H - 30) { doc.addPage(); header(); yy = 24; }
+      doc.text("Importante", M, yy); yy += 4.5;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+      st.notas.forEach((t) => {
+        const lines = doc.splitTextToSize("• " + t, CW);
+        if (yy + lines.length * 3.3 > H - 14) { doc.addPage(); header(); yy = 24; }
+        doc.text(lines, M, yy); yy += lines.length * 3.3 + 0.8;
+      });
+      return yy;
+    }
+
+    if (landscape) { notas(y); doc.addPage(); header(); y = 24; }
+
+    // Matriz
+    doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+    doc.text("Qué cubre cada opción", M, y); y += 3;
+    const rows = matrixRows(ops);
+    const firstW = landscape ? CW * 0.17 : CW * (n <= 2 ? 0.34 : 0.28);
+    const colW = (CW - firstW) / n;
+    // Encabezado agrupado por compañía (consecutivas)
+    const groups = [];
+    ops.forEach((o, i) => {
+      const g = groups[groups.length - 1];
+      if (g && g.cia === o.cia) g.n++; else groups.push({ cia: o.cia, n: 1, start: i });
+    });
+    const head1 = [{ content: "", styles: { fillColor: [255, 255, 255] } }].concat(groups.map((g) => ({ content: g.cia, colSpan: g.n, styles: { fillColor: colorFor(g.cia, extraMap), textColor: NAVY, fontStyle: "bold", halign: "center", fontSize: 7.5 } })));
+    const head2 = [{ content: "", styles: { fillColor: [255, 255, 255] } }].concat(ops.map((o) => ({ content: o.plan + "\n" + o.nivel, styles: { halign: "center" } })));
+    const mbody = [["Cuota mensual"].concat(ops.map((o) => money(o.cuota)))].concat(rows.map(([label, vals]) => [label].concat(vals)));
+    const fs = n >= 7 ? 6.8 : 7.3;
+    const groupStarts = new Set(groups.map((g) => g.start + 1));
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M, top: 20, bottom: 14 },
+      head: [head1, head2], body: mbody, theme: "plain",
+      styles: { font: "helvetica", fontSize: fs, textColor: INK, cellPadding: { top: 1.3, bottom: 1.3, left: 1.5, right: 1.5 }, valign: "middle", halign: "center", lineColor: LINE, lineWidth: { bottom: 0.15 } },
+      headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: fs + 0.2 },
+      columnStyles: Object.assign({ 0: { cellWidth: firstW, halign: "left", fontStyle: "bold" } }, Object.fromEntries(ops.map((_, i) => [i + 1, { cellWidth: colW }]))),
+      tableLineColor: LINE, tableLineWidth: 0.2,
+      didParseCell: (d) => {
+        if (d.section === "body" && d.row.index === 0) { d.cell.styles.fillColor = LIGHT; d.cell.styles.fontStyle = "bold"; if (d.column.index > 0) d.cell.styles.textColor = NAVY; }
+        if (d.section === "body" && d.column.index > 0) {
+          const raw = String(d.cell.raw == null ? "" : d.cell.raw);
+          if (raw === "") { d.cell.text = ["—"]; d.cell.styles.textColor = [192, 198, 207]; }
+          else if (raw.startsWith(OK)) {
+            const rest = raw.slice(1).trim();
+            d.cell._check = true;
+            d.cell.text = doc.splitTextToSize((rest ? "      " : "") + rest, colW - 3);
+          }
+        }
+        if (d.section === "head" && d.row.index === 1 && d.column.index > 0) {
+          d.cell.styles.fontSize = fs + 0.2;
+        }
+      },
+      didDrawCell: (d) => {
+        if (d.section === "body" && d.column.index > 0 && groupStarts.has(d.column.index) && d.column.index > 1) {
+          doc.setDrawColor(154, 165, 180); doc.setLineWidth(0.3); doc.line(d.cell.x, d.cell.y, d.cell.x, d.cell.y + d.cell.height);
+        }
+        if (d.section === "head" && d.row.index === 1 && d.column.index > 0 && groupStarts.has(d.column.index) && d.column.index > 1) {
+          doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.3); doc.line(d.cell.x, d.cell.y, d.cell.x, d.cell.y + d.cell.height);
+        }
+        if (d.cell._check) {
+          const fsz = d.cell.styles.fontSize;
+          doc.setFontSize(fsz); doc.setFont("helvetica", d.cell.styles.fontStyle || "normal");
+          const lines = d.cell.text;
+          const lineH = fsz * 0.3528 * 1.15;
+          const total = lines.length * lineH;
+          const top = d.cell.y + (d.cell.height - total) / 2;
+          const w0 = doc.getTextWidth(lines[0]);
+          const sx = d.cell.x + (d.cell.width - w0) / 2;
+          const cy = top + lineH / 2;
+          doc.setDrawColor(...TEAL); doc.setLineWidth(0.45);
+          const cx = (lines[0].trim() === "") ? d.cell.x + d.cell.width / 2 - 1.2 : sx + 0.2;
+          doc.line(cx, cy, cx + 0.8, cy + 0.9);
+          doc.line(cx + 0.8, cy + 0.9, cx + 2.4, cy - 1.0);
+        }
+      },
+      didDrawPage: () => header(),
+    });
+    y = doc.lastAutoTable.finalY + 4;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...MUTED);
+    // leyenda
+    doc.setDrawColor(...TEAL); doc.setLineWidth(0.45);
+    doc.line(M, y - 0.9, M + 0.8, y); doc.line(M + 0.8, y, M + 2.4, y - 1.9);
+    doc.text("  incluido · — no incluido · Resumen informativo; rigen las condiciones de póliza de cada compañía.", M + 2.4, y);
+    y += 7;
+    if (!landscape) notas(y);
+
+    // Pie en todas las páginas
+    const pages = doc.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...MUTED);
+      doc.text((st.cliente ? "Preparado para " + st.cliente + " · " : "") + (st.fecha || ""), M, H - 7);
+      doc.text("Página " + p + (pages > 1 ? " de " + pages : ""), W - M, H - 7, { align: "right" });
+    }
+    return doc;
+  }
+
+  const api = { build, ROWS, matrixRows, money };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.CotPDF = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  "use strict";
+  // ---------- Usuarios ----------
+  // Para agregar o cambiar un usuario, editá esta lista (nombre y PIN de 4 dígitos).
+  const USERS = [
+    { id: "fernando", name: "Fernando Cabeda", pin: "4444" },
+    { id: "mariano", name: "Mariano Santa Cruz", pin: "4444" },
+    { id: "pablo", name: "Pablo Machado", pin: "4444" },
+    { id: "diego", name: "Diego Klaic", pin: "4444" },
+  ];
+  const CIA_ORDER = { "Federación Patronal": 0, "Sancor Seguros": 1, "Mercantil Andina": 2, "Allianz": 3 };
+  const CIA_VAR = { "Federación Patronal": "var(--fp)", "Sancor Seguros": "var(--sancor)", "Mercantil Andina": "var(--merc)", "Allianz": "var(--allianz)" };
+  const NIVELES = ["Responsabilidad civil", "Terceros", "Terceros completo", "Terceros completo full", "Todo riesgo"];
+  const OK = "✓";
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const today = () => { const d = new Date(); return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear(); };
+  const fmtMoney = (v, dec) => v == null || isNaN(v) ? "" : Number(v).toLocaleString("es-AR", { minimumFractionDigits: dec ? 2 : 0, maximumFractionDigits: dec ? 2 : 0 });
+  const parseMoney = (s) => { const t = String(s).replace(/[^\d,.-]/g, ""); if (!t) return null; const v = parseFloat(t.replace(/\./g, "").replace(",", ".")); return isNaN(v) ? null : v; };
+
+  let me = null;
+  let state = null; // {cliente, fecha, vehiculo, opciones, notas, ranking, files, example}
+
+  // ---------- Ejemplo ----------
+  function exampleState() {
+    const base = { rc: "$208.000.000", inc_total: OK, inc_parcial: OK, robo_total: OK, robo_parcial: OK, acc_total: OK, danios: "", franq_robo: "Consultar", granizo: OK, inundacion: "Consultar", huelga: "Consultar", cristales: OK, amparo: "Consultar", ruedas: "1 rueda por póliza", rastreo: "", auxilio: OK + " con grúa", legal: OK + " con casco en limítrofes", ap: "$2.080.000 (muerte)", gestoria: OK + " robo y destrucción total", taller: "A elección", ajuste: "No", adicional: "Seguro de vida (Vida Modular)" };
+    const sc = { rc: "$240.000.000", inc_total: OK, inc_parcial: OK, robo_total: OK, robo_parcial: OK, acc_total: OK, danios: "", franq_robo: "Sin franquicia", granizo: OK + " sin deducible ni límite", inundacion: OK + " sin deducible ni límite", huelga: OK, cristales: OK + " sin deducible ni límite", amparo: OK + " sin límite", ruedas: "", rastreo: OK, auxilio: OK, legal: OK, ap: OK + " muerte e invalidez", gestoria: OK, taller: "Consultar", ajuste: "Hasta 10%", adicional: "" };
+    const td = Object.assign({}, base, { danios: OK + " franq. $1.200.000", taller: "Red de la compañía" });
+    const sctd = Object.assign({}, sc, { danios: OK + " franq. $800.000", franq_robo: "10% (mín. 1% / máx. 3%)" });
+    return {
+      example: true, cliente: "Cliente de ejemplo", fecha: today(), iva: "Consumidor final",
+      vehiculo: { modelo: "Toyota Etios 1.5 XLS 5 puertas", anio: "2019", uso: "Particular", radicacion: "Quilmes", moto: false },
+      ranking: false, files: [], vigencias: {
+        "Federación Patronal": "Federación Patronal: el valor puede variar si la póliza se emite en otro mes (percepción de Ingresos Brutos PBA).",
+        "Sancor Seguros": "Sancor Seguros: cotización válida hasta fin de mes." },
+      opciones: [
+        { id: "e1", on: true, cia: "Federación Patronal", plan: "CF", nivel: "Terceros completo full", desc: "Incluye granizo, cristales y robo de rueda", cuota: 148500, sa: 20000000, cov: base },
+        { id: "e2", on: true, cia: "Federación Patronal", plan: "TD3 · franquicia 6%", nivel: "Todo riesgo", desc: "Todo riesgo con franquicia de $1.200.000", cuota: 162300, sa: 20000000, cov: td },
+        { id: "e3", on: true, cia: "Sancor Seguros", plan: "Max Premium", nivel: "Terceros completo full", desc: "Sin deducibles: granizo, inundación y cristales", cuota: 139900, sa: 20400000, cov: sc },
+        { id: "e4", on: true, cia: "Sancor Seguros", plan: "Todo Riesgo · franquicia 4%", nivel: "Todo riesgo", desc: "Todo riesgo con franquicia de $800.000", cuota: 189700, sa: 20400000, cov: sctd },
+      ],
+      solicitantes: {}, avisos: [], modelos: {}, radicaciones: {},
+    };
+  }
+  function emptyState() {
+    return { example: false, cliente: "", fecha: today(), vehiculo: { modelo: "", anio: "", uso: "Particular", radicacion: "", moto: false }, ranking: false, files: [], vigencias: {}, opciones: [], solicitantes: {}, avisos: [], modelos: {}, radicaciones: {}, notas: null };
+  }
+
+  // ---------- Login ----------
+  let chosen = null;
+  function renderLogin() {
+    $("appView").hidden = true; $("loginView").hidden = false;
+    const list = $("userList"); list.textContent = "";
+    USERS.forEach((u) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "user-btn"; b.id = "user-" + u.id;
+      b.setAttribute("aria-pressed", chosen === u.id ? "true" : "false");
+      const av = document.createElement("div"); av.className = "avatar"; av.textContent = initials(u.name);
+      const nm = document.createElement("span"); nm.textContent = u.name;
+      b.append(av, nm);
+      b.addEventListener("click", () => { chosen = u.id; renderLogin(); $("pin").focus(); });
+      list.appendChild(b);
+    });
+  }
+  $("loginForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const u = USERS.find((x) => x.id === chosen);
+    if (!u) { $("loginError").textContent = "Elegí tu usuario."; return; }
+    if ($("pin").value !== u.pin) { $("loginError").textContent = "El PIN no coincide. Probá de nuevo."; $("pin").select(); return; }
+    $("loginError").textContent = ""; $("pin").value = "";
+    store.set("cot.session", u.id);
+    enter(u);
+  });
+  $("logoutBtn").addEventListener("click", () => { saveDraft(); store.del("cot.session"); me = null; chosen = null; renderLogin(); });
+
+  function enter(u) {
+    me = u;
+    $("loginView").hidden = true; $("appView").hidden = false;
+    $("meName").textContent = u.name; $("meAvatar").textContent = initials(u.name);
+    const draft = store.get("cot.draft." + u.id);
+    state = draft && draft.opciones ? draft : exampleState();
+    renderAll();
+  }
+
+  // ---------- Borrador ----------
+  let saveT = null;
+  function saveDraft() {
+    if (!me || !state) return;
+    if (state.example) { store.del("cot.draft." + me.id); return; }
+    store.set("cot.draft." + me.id, state);
+  }
+  function changed(opts = {}) {
+    clearTimeout(saveT); saveT = setTimeout(saveDraft, 400);
+    schedulePreview();
+    renderWarns();
+  }
+
+  // ---------- Carga de PDFs ----------
+  async function handleFiles(list) {
+    const files = Array.from(list).filter((f) => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name));
+    if (!files.length) return;
+    if (state.example) { state = emptyState(); }
+    if (!window.pdfjsLib) { setStatus("No se pudo cargar el lector de PDF. Revisá la conexión y recargá la página."); return; }
+    for (const f of files) {
+      const entry = { name: f.name, status: "Leyendo…", ok: null };
+      state.files.push(entry); renderFiles();
+      try {
+        const buf = new Uint8Array(await f.arrayBuffer());
+        const items = await CotParsers.extractItems(window.pdfjsLib, buf);
+        const r = CotParsers.parseItems(items);
+        entry.ok = true; entry.cia = r.cia; entry.status = r.cia + " · " + r.opciones.length + (r.opciones.length === 1 ? " opción" : " opciones");
+        mergeResult(r);
+      } catch (err) {
+        entry.ok = false; entry.status = err && err.message ? err.message : "No se pudo leer";
+      }
+      renderFiles();
+    }
+    sortByCompany();
+    state.notas = null;
+    renderAll();
+    saveDraft();
+  }
+  function mergeResult(r) {
+    const v = state.vehiculo;
+    if (!v.modelo) v.modelo = r.vehiculo.modelo;
+    if (!v.anio) v.anio = r.vehiculo.anio;
+    // Localidad de guarda: prioriza la "ubicación del riesgo" (Sancor, Mercantil) sobre el domicilio (Federación, Allianz)
+    const prio = { "Sancor Seguros": 3, "Mercantil Andina": 3, "Federación Patronal": 1, "Allianz": 1 }[r.cia] || 1;
+    if (r.vehiculo.radicacion && (!v.radicacion || (state.autoRad !== false && prio > (state.radPrio || 0)))) { v.radicacion = r.vehiculo.radicacion; state.radPrio = prio; state.autoRad = true; }
+    // Nombre del asegurado: el que figura en la cotización (salvo que sea uno de los productores)
+    const surn = USERS.map((u) => norm(u.name).split(" ").slice(-1)[0]);
+    const esProductor = (n) => surn.some((x) => norm(n).split(" ").includes(x));
+    if (r.solicitante && !esProductor(r.solicitante) && (!state.cliente || state.autoCliente !== false)) { state.cliente = r.solicitante; state.autoCliente = true; }
+    if (!v.uso || v.uso === "Particular") v.uso = r.vehiculo.uso || "Particular";
+    if (r.vehiculo.moto) v.moto = true;
+    if (r.fecha) state.fecha = r.fecha;
+    if (r.iva && (!state.iva || state.autoIva !== false)) { state.iva = r.iva; state.autoIva = true; }
+    state.modelos[r.cia] = r.vehiculo.modelo;
+    state.radicaciones[r.cia] = r.vehiculo.radicacion;
+    if (r.solicitante) state.solicitantes[r.cia] = r.solicitante;
+    if (r.vigencia) state.vigencias[r.cia] = r.vigencia;
+    r.avisos.forEach((a) => { if (!state.avisos.includes(a)) state.avisos.push(a); });
+    r.opciones.forEach((o, i) => {
+      // reemplaza una opción idéntica (misma compañía y plan) por la más nueva
+      const dup = state.opciones.findIndex((x) => x.cia === o.cia && x.plan === o.plan);
+      const op = Object.assign({ id: "o" + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 6), on: true }, o);
+      if (dup >= 0) { op.on = state.opciones[dup].on; state.opciones[dup] = op; } else state.opciones.push(op);
+    });
+  }
+  function sortByCompany() {
+    const rank = (n) => (CotParsers.NIVEL_RANK[n] != null ? CotParsers.NIVEL_RANK[n] : 9);
+    state.opciones.sort((a, b) => (CIA_ORDER[a.cia] != null ? CIA_ORDER[a.cia] : 9) - (CIA_ORDER[b.cia] != null ? CIA_ORDER[b.cia] : 9) || a.cia.localeCompare(b.cia) || rank(a.nivel) - rank(b.nivel) || (a.cuota || 0) - (b.cuota || 0));
+  }
+
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
+  $("fileInput").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
+  $("newBtn").addEventListener("click", () => { state = emptyState(); renderAll(); saveDraft(); });
+  $("clearExample").addEventListener("click", () => { state = emptyState(); renderAll(); saveDraft(); });
+
+  // ---------- Render ----------
+  function renderAll() {
+    $("exampleBanner").hidden = !state.example;
+    renderFiles(); renderForm(); renderOps(); renderMatrix(); renderNotes(); renderWarns(); schedulePreview();
+  }
+  function renderFiles() {
+    const box = $("fileList"); box.textContent = "";
+    state.files.forEach((f, i) => {
+      const row = document.createElement("div"); row.className = "file";
+      const nm = document.createElement("span"); nm.className = "name"; nm.textContent = f.name;
+      const chip = document.createElement("span"); chip.className = "chip" + (f.ok === true ? " ok" : f.ok === false ? " bad" : ""); chip.textContent = f.status;
+      const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.title = "Quitar de la lista"; x.textContent = "×";
+      x.addEventListener("click", () => { state.files.splice(i, 1); renderFiles(); saveDraft(); });
+      row.append(nm, chip, x); box.appendChild(row);
+    });
+  }
+  function renderForm() {
+    $("cliente").value = state.cliente || ""; $("fecha").value = state.fecha || ""; $("iva").value = state.iva || "";
+    $("vModelo").value = state.vehiculo.modelo || ""; $("vAnio").value = state.vehiculo.anio || "";
+    $("vUso").value = state.vehiculo.uso || ""; $("vRad").value = state.vehiculo.radicacion || "";
+    $("vMoto").value = state.vehiculo.moto ? "1" : "0"; $("ranking").checked = !!state.ranking;
+  }
+  [["cliente", (v) => { state.cliente = v; state.autoCliente = false; }], ["fecha", (v) => (state.fecha = v)], ["vModelo", (v) => (state.vehiculo.modelo = v)], ["vAnio", (v) => (state.vehiculo.anio = v)], ["vUso", (v) => (state.vehiculo.uso = v)], ["vRad", (v) => { state.vehiculo.radicacion = v; state.autoRad = false; }], ["iva", (v) => { state.iva = v; state.autoIva = false; }]]
+    .forEach(([id, fn]) => $(id).addEventListener("input", (e) => { fn(e.target.value); if (state.example) state.example = false, $("exampleBanner").hidden = true; changed(); refreshNotesIfAuto(); }));
+  $("vMoto").addEventListener("change", (e) => { state.vehiculo.moto = e.target.value === "1"; changed(); });
+  $("ranking").addEventListener("change", (e) => { state.ranking = e.target.checked; changed({ notes: false }); });
+
+  function renderOps() {
+    const tb = $("opsTable").querySelector("tbody"); tb.textContent = "";
+    if (!state.opciones.length) {
+      const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 8; td.className = "hint"; td.style.padding = "14px 6px";
+      td.textContent = "Todavía no hay opciones. Cargá los PDFs de las cotizaciones en el paso 1."; tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    state.opciones.forEach((o, i) => {
+      const tr = document.createElement("tr"); if (!o.on) tr.className = "off";
+      const td = () => { const c = document.createElement("td"); tr.appendChild(c); return c; };
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = o.on; cb.id = "on-" + o.id; cb.setAttribute("aria-label", "Incluir " + o.plan);
+      cb.addEventListener("change", () => { o.on = cb.checked; tr.className = o.on ? "" : "off"; renderMatrix(); changed(); refreshNotesIfAuto(); });
+      td().appendChild(cb);
+      const tag = document.createElement("span"); tag.className = "cia-tag"; tag.textContent = o.cia; tag.style.background = CIA_VAR[o.cia] || "var(--other)"; td().appendChild(tag);
+      const plan = document.createElement("input"); plan.type = "text"; plan.value = o.plan; plan.id = "plan-" + o.id;
+      plan.addEventListener("input", () => { o.plan = plan.value; renderMatrixHead(); changed(); }); td().appendChild(plan);
+      const sel = document.createElement("select"); sel.id = "niv-" + o.id;
+      NIVELES.forEach((n) => { const op = document.createElement("option"); op.value = n; op.textContent = n; sel.appendChild(op); });
+      sel.value = o.nivel; sel.addEventListener("change", () => { o.nivel = sel.value; renderMatrixHead(); changed(); }); td().appendChild(sel);
+      const sa = document.createElement("input"); sa.type = "text"; sa.className = "money"; sa.value = fmtMoney(o.sa, false); sa.id = "sa-" + o.id; sa.placeholder = "Solo RC";
+      sa.addEventListener("change", () => { o.sa = parseMoney(sa.value); sa.value = fmtMoney(o.sa, false); changed(); refreshNotesIfAuto(); }); td().appendChild(sa);
+      const cu = document.createElement("input"); cu.type = "text"; cu.className = "money"; cu.value = fmtMoney(o.cuota, true); cu.id = "cu-" + o.id;
+      cu.addEventListener("change", () => { o.cuota = parseMoney(cu.value); cu.value = fmtMoney(o.cuota, true); changed(); }); td().appendChild(cu);
+      const mv = document.createElement("div"); mv.className = "mv";
+      const up = document.createElement("button"); up.type = "button"; up.textContent = "▲"; up.title = "Subir"; up.disabled = i === 0;
+      const dn = document.createElement("button"); dn.type = "button"; dn.textContent = "▼"; dn.title = "Bajar"; dn.disabled = i === state.opciones.length - 1;
+      up.addEventListener("click", () => move(i, -1)); dn.addEventListener("click", () => move(i, 1));
+      mv.append(up, dn); td().appendChild(mv);
+      const del = document.createElement("button"); del.type = "button"; del.className = "x"; del.textContent = "×"; del.title = "Eliminar opción";
+      del.addEventListener("click", () => { state.opciones.splice(i, 1); renderOps(); renderMatrix(); changed(); refreshNotesIfAuto(); }); td().appendChild(del);
+      tb.appendChild(tr);
+    });
+  }
+  function move(i, d) {
+    const j = i + d; if (j < 0 || j >= state.opciones.length) return;
+    const a = state.opciones; [a[i], a[j]] = [a[j], a[i]];
+    renderOps(); renderMatrix(); changed({ notes: false });
+  }
+  $("sortPriceBtn").addEventListener("click", () => {
+    state.opciones.sort((a, b) => (a.cuota == null ? Infinity : a.cuota) - (b.cuota == null ? Infinity : b.cuota));
+    renderOps(); renderMatrix(); changed({ notes: false });
+  });
+  $("sortBtn").addEventListener("click", () => { sortByCompany(); renderOps(); renderMatrix(); changed({ notes: false }); });
+
+  // ---------- Matriz editable ----------
+  let lastCell = null;
+  const active = () => state.opciones.filter((o) => o.on);
+  function renderMatrixHead() {
+    const ths = $("mxTable").querySelectorAll("thead th[data-i]");
+    ths.forEach((th) => { const o = active()[+th.dataset.i]; if (o) { th.firstChild.textContent = o.plan; th.lastChild.textContent = o.cia + " · " + o.nivel; } });
+  }
+  function renderMatrix() {
+    const t = $("mxTable"); t.textContent = "";
+    const ops = active();
+    if (!ops.length) { const cap = document.createElement("caption"); cap.className = "hint"; cap.style.textAlign = "left"; cap.textContent = "Las coberturas aparecen cuando hay opciones incluidas."; t.appendChild(cap); return; }
+    const thead = document.createElement("thead"); const hr = document.createElement("tr");
+    const th0 = document.createElement("th"); th0.textContent = "Cobertura"; hr.appendChild(th0);
+    ops.forEach((o, i) => {
+      const th = document.createElement("th"); th.dataset.i = i;
+      const a = document.createElement("div"); a.textContent = o.plan;
+      const b = document.createElement("div"); b.className = "hint"; b.style.fontWeight = "400"; b.textContent = o.cia + " · " + o.nivel;
+      th.append(a, b); th.style.background = CIA_VAR[o.cia] || "var(--other)"; hr.appendChild(th);
+    });
+    thead.appendChild(hr); t.appendChild(thead);
+    const tb = document.createElement("tbody");
+    const all = $("allRows").checked;
+    CotPDF.ROWS.forEach(([k, label]) => {
+      const vals = ops.map((o) => (o.cov && o.cov[k]) || "");
+      if (!all && !vals.some((v) => v)) return;
+      const tr = document.createElement("tr");
+      const td0 = document.createElement("td"); td0.textContent = label; tr.appendChild(td0);
+      ops.forEach((o, i) => {
+        const td = document.createElement("td"); const inp = document.createElement("input"); inp.type = "text";
+        inp.id = "mx-" + o.id + "-" + k; inp.value = vals[i]; inp.setAttribute("aria-label", label + " — " + o.plan);
+        const paint = () => { inp.className = /^consultar$/i.test(inp.value.trim()) ? "consultar" : inp.value.startsWith(OK) ? "yes" : ""; };
+        paint();
+        inp.addEventListener("focus", () => (lastCell = inp));
+        inp.addEventListener("input", () => { o.cov = o.cov || {}; o.cov[k] = inp.value; paint(); if (state.example) { state.example = false; $("exampleBanner").hidden = true; } changed({ notes: false }); });
+        td.appendChild(inp); tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+  }
+  $("allRows").addEventListener("change", renderMatrix);
+  $("tickBtn").addEventListener("mousedown", (e) => e.preventDefault());
+  $("tickBtn").addEventListener("click", () => {
+    if (!lastCell) return;
+    const v = lastCell.value;
+    lastCell.value = v.startsWith(OK) ? v.slice(1).trim() : (OK + " " + v).trim();
+    lastCell.dispatchEvent(new Event("input")); lastCell.focus();
+  });
+
+  // ---------- Notas ----------
+  function autoNotes() {
+    const ops = active(); const notes = [];
+    if (!ops.length) return notes;
+    notes.push("Valores de cuota mensual informados por cada compañía el " + (state.fecha || today()) + ". Son orientativos y quedan sujetos a inspección del vehículo y aprobación del riesgo.");
+    const cias = [...new Set(ops.map((o) => o.cia))];
+    const vig = cias.map((c) => state.vigencias[c]).filter(Boolean).map((t) => t.startsWith("El valor") ? "Federación Patronal: e" + t.slice(1) : t);
+    if (vig.length) notes.push("Vigencia de las cotizaciones: " + vig.map((t) => t.replace(/\.$/, "")).join(". ") + ".");
+    const saBy = cias.map((c) => { const o = ops.find((x) => x.cia === c && x.sa); return o ? { c, sa: o.sa, aj: (o.cov && o.cov.ajuste) || "" } : null; }).filter(Boolean);
+    if (saBy.length) {
+      const same = saBy.every((s) => s.sa === saBy[0].sa);
+      const aj = (s) => (/hasta\s*\d+/i.test(s.aj) ? " (con ajuste automático de " + s.aj.toLowerCase() + ")" : "");
+      if (same && saBy.length > 1) notes.push("Suma asegurada en todas las opciones: $" + fmtMoney(saBy[0].sa) + ".");
+      else notes.push((saBy.length > 1 ? "Sumas aseguradas: " : "Suma asegurada: ") + saBy.map((s) => (saBy.length > 1 ? s.c + " " : "") + "$" + fmtMoney(s.sa) + aj(s)).join("; ") + ".");
+    }
+    const fp = ops.filter((o) => o.cia === "Federación Patronal");
+    if (fp.some((o) => /vida/i.test((o.cov && o.cov.adicional) || ""))) {
+      let t = "La cuota de Federación Patronal incluye un seguro de vida (Vida Modular).";
+      if (fp.some((o) => /red de la compa/i.test((o.cov && o.cov.taller) || ""))) t += " En sus planes de todo riesgo, las reparaciones se hacen en talleres de la compañía.";
+      notes.push(t);
+    }
+    ops.filter((o) => o.pago).forEach((o) => notes.push(o.cia + " " + o.plan + ": se abona en " + o.pago + " de $" + fmtMoney(o.cuota, true) + (o.contado ? " o $" + fmtMoney(o.contado) + " de contado" : "") + "."));
+    const sr = ops.find((o) => o.cia === "Sancor Seguros" && /^10%/.test((o.cov && o.cov.franq_robo) || ""));
+    if (sr) { const m = sr.cov.franq_robo.match(/mín\. (\d+%) \/ máx\. (\d+%)/); notes.push("En Sancor Seguros, el robo parcial tiene deducible del 10% del siniestro" + (m ? " (mín. " + m[1] + ", máx. " + m[2] + " del valor 0 km)" : "") + ", salvo en Max Premium."); }
+    if (ops.some((o) => o.cov && o.cov.danios)) notes.push("Franquicia = monto a cargo del asegurado en cada siniestro de daño parcial.");
+    notes.push("Todas las coberturas quedan sujetas a las condiciones, límites y exclusiones de la póliza de cada compañía.");
+    return notes;
+  }
+  function renderNotes() {
+    if (!state.notas) { state.notas = autoNotes(); state.notasAuto = true; }
+    $("notas").value = state.notas.join("\n");
+  }
+  function refreshNotesIfAuto() { if (state.notasAuto !== false) { state.notas = autoNotes(); $("notas").value = state.notas.join("\n"); } }
+  $("notas").addEventListener("input", (e) => { state.notas = e.target.value.split("\n").map((s) => s.trim()).filter(Boolean); state.notasAuto = false; changed({ notes: false }); });
+  $("notesRegen").addEventListener("click", () => { state.notasAuto = true; state.notas = autoNotes(); $("notas").value = state.notas.join("\n"); changed({ notes: false }); });
+
+  // ---------- Avisos ----------
+  function engine(s) { const m = String(s || "").match(/\b(\d\.\d)\b/); return m ? m[1] : null; }
+  function renderWarns() {
+    const w = [...(state.avisos || [])];
+    const cias = Object.keys(state.modelos || {});
+    if (cias.length > 1) {
+      const eng = cias.map((c) => [c, engine(state.modelos[c])]).filter((x) => x[1]);
+      if (new Set(eng.map((x) => x[1])).size > 1) w.push("El modelo no coincide entre compañías: " + cias.map((c) => c + " cotizó " + state.modelos[c]).join("; ") + ". Confirmá la versión, porque cambia la suma asegurada y la tarifa.");
+      const rad = cias.map((c) => [c, String(state.radicaciones[c] || "").replace(/\(.*?\)/, "").trim().toLowerCase()]).filter((x) => x[1]);
+      const base = (s) => s.replace(/\s+(oeste|este|norte|sur)$/, "");
+      if (new Set(rad.map((x) => base(x[1]))).size > 1) w.push("La radicación no coincide: " + cias.map((c) => c + " " + state.radicaciones[c]).join("; ") + ".");
+    }
+    Object.entries(state.solicitantes || {}).forEach(([c, n]) => {
+      if (state.cliente && n && !norm(n).split(" ").some((p) => p.length > 2 && norm(state.cliente).includes(p))) w.push(c + ": la cotización está a nombre de " + n + ".");
+    });
+    active().filter((o) => o.cuota == null).forEach((o) => w.push("No pude leer la cuota de " + o.cia + " " + o.plan + ". Completala en el paso 3."));
+    if (active().some((o) => Object.values(o.cov || {}).some((v) => /^consultar$/i.test(String(v).trim())))) w.push("Hay coberturas en \"Consultar\" (en amarillo en el paso 4). Completalas si tenés el dato.");
+    const box = $("warns"); box.textContent = "";
+    w.forEach((t) => { const d = document.createElement("div"); d.className = "warn"; d.textContent = t; box.appendChild(d); });
+    $("warnCard").hidden = !w.length || state.example;
+  }
+  const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  // ---------- PDF ----------
+  function pdfState() {
+    return {
+      productor: me ? me.name : "", cliente: state.cliente.trim(), fecha: state.fecha, iva: state.iva || "",
+      vehiculo: state.vehiculo, opciones: active(), notas: state.notas || [], ranking: state.ranking,
+    };
+  }
+  function buildDoc() {
+    const J = window.jspdf && window.jspdf.jsPDF;
+    if (!J) throw new Error("No se pudo cargar el generador de PDF. Revisá la conexión y recargá la página.");
+    return CotPDF.build(J, pdfState());
+  }
+  let prevT = null, prevSeq = 0;
+  function schedulePreview() { clearTimeout(prevT); prevT = setTimeout(renderPreview, 450); }
+  let lastW = 0;
+  window.addEventListener("resize", () => { const w = $("pages").clientWidth; if (state && Math.abs(w - lastW) > 40) { lastW = w; schedulePreview(); } });
+  async function renderPreview() {
+    const seq = ++prevSeq;
+    const box = $("pages");
+    if (!active().length) { box.innerHTML = '<div class="empty">Cargá cotizaciones para ver el comparativo.</div>'; $("pageInfo").textContent = ""; $("dlBtn").disabled = true; return; }
+    $("dlBtn").disabled = false;
+    if (!window.pdfjsLib || !(window.jspdf && window.jspdf.jsPDF)) { box.innerHTML = '<div class="empty">La vista previa necesita conexión para cargar sus herramientas.</div>'; return; }
+    try {
+      const doc = buildDoc();
+      const buf = doc.output("arraybuffer");
+      const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(buf), verbosity: 0 }).promise;
+      if (seq !== prevSeq) return;
+      const canv = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const base = page.getViewport({ scale: 1 });
+        const avail = Math.max(320, box.clientWidth - 32);
+        const vp = page.getViewport({ scale: Math.min(4, (avail / base.width) * Math.max(1, window.devicePixelRatio || 1)) });
+        const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
+        await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+        canv.push(c);
+      }
+      if (seq !== prevSeq) return;
+      box.textContent = ""; canv.forEach((c) => box.appendChild(c));
+      $("pageInfo").textContent = pdf.numPages + (pdf.numPages === 1 ? " página" : " páginas");
+    } catch (e) {
+      box.innerHTML = ""; const d = document.createElement("div"); d.className = "empty"; d.textContent = "No se pudo armar la vista previa: " + (e.message || e); box.appendChild(d);
+    }
+  }
+  function fileName() {
+    const clean = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, " ").trim().split(" ").slice(0, 3).join("_");
+    const v = clean(state.vehiculo.modelo).split("_").slice(0, 2).join("_");
+    const c = clean(state.cliente);
+    return "Comparativo" + (v ? "_" + v : "") + (c ? "_" + c : "") + ".pdf";
+  }
+  function setStatus(t) { $("dlStatus").textContent = t; }
+  let downloads = null;
+  if (window.claude && window.claude.use) window.claude.use("downloads").then((d) => (downloads = d)).catch(() => {});
+  $("dlBtn").addEventListener("click", async () => {
+    let doc;
+    try { doc = buildDoc(); } catch (e) { setStatus(e.message); return; }
+    const blob = doc.output("blob");
+    const name = fileName();
+    if (downloads) {
+      try { await downloads.save({ filename: name, data: blob }); setStatus("Listo: " + name); }
+      catch (e) {
+        const code = e && e.code;
+        setStatus(code === "declined" ? "Descarga cancelada." : code === "rate_limited" ? "Ya hay una descarga pendiente. Esperá un momento y probá de nuevo." : "No se pudo descargar en esta vista (" + (code || "error") + ").");
+      }
+      return;
+    }
+    try {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setStatus("Descarga iniciada: " + name);
+    } catch (e) { setStatus("No se pudo descargar en esta vista."); }
+  });
+
+  // ---------- Inicio ----------
+  if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions && !window.pdfjsWorker) { /* sin worker: pdf.js usa el hilo principal */ }
+  const sid = store.get("cot.session");
+  const su = USERS.find((u) => u.id === sid);
+  if (su) enter(su); else renderLogin();
+})();
+</script>
+
+</body></html>
