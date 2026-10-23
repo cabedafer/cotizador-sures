@@ -127,6 +127,27 @@ table.mx input.yes { color: var(--accent); }
 .status { font-size: 12.5px; color: var(--muted); min-height: 18px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.hist-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.hist-tools input[type=search] { flex: 1; min-width: 200px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table.hist { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.hist th { text-align: left; font-size: 11.5px; color: var(--muted); font-weight: 600; padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.hist td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.hist td.acts { white-space: nowrap; text-align: right; }
+table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
+.badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+@media (max-width: 640px) {
+  .topbar { position: static; }
+  .brand small { display: none; }
+  table.hist thead { display: none; }
+  table.hist, table.hist tbody, table.hist tr, table.hist td { display: block; width: 100%; }
+  table.hist tr { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  table.hist td { border: 0; padding: 2px 0; }
+  table.hist td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 12px; }
+  table.hist td.main { font-weight: 700; font-size: 14.5px; }
+  table.hist td.main::before { content: none; }
+  table.hist td.acts { text-align: left; padding-top: 8px; }
+}
+.confirm { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--err); }
 </style>
 
 <section id="loginView" class="login" hidden>
@@ -158,6 +179,20 @@ table.mx input.yes { color: var(--accent); }
 
   <main class="layout">
     <div class="col">
+      <section class="card" id="histCard">
+        <div class="card-h"><h2>Cotizaciones guardadas <span class="badge" id="histMode"></span></h2>
+          <button type="button" class="btn ghost" id="histToggle" aria-expanded="false">Ver historial</button></div>
+        <div class="card-b" id="histBody" hidden>
+          <div class="hist-tools">
+            <input type="search" id="histSearch" placeholder="Buscar por asegurado, vehículo o productor">
+            <label class="check"><input type="checkbox" id="histMine"> Solo las mías</label>
+            <button type="button" class="btn ghost" id="histReload">Actualizar</button>
+          </div>
+          <div class="scroll"><table class="hist" id="histTable"></table></div>
+          <div class="status" id="histStatus"></div>
+        </div>
+      </section>
+
       <div class="example-banner" id="exampleBanner" hidden>
         <span><strong>Estás viendo un ejemplo.</strong> Cargá los PDFs de tus cotizaciones y se reemplaza.</span>
         <button type="button" class="btn ghost" id="clearExample">Empezar de cero</button>
@@ -239,6 +274,7 @@ table.mx input.yes { color: var(--accent); }
         <div class="pages" id="pages"><div class="empty">Cargá cotizaciones para ver el comparativo.</div></div>
         <div class="dl">
           <button type="button" class="btn primary" id="dlBtn">Descargar PDF</button>
+          <button type="button" class="btn" id="saveBtn">Guardar cotización</button>
           <div class="status" id="dlStatus" role="status"></div>
         </div>
       </section>
@@ -1120,6 +1156,11 @@ table.mx input.yes { color: var(--accent); }
     { id: "pablo", name: "Pablo Machado", pin: "4444" },
     { id: "diego", name: "Diego Klaic", pin: "4444" },
   ];
+  // ---------- Guardado compartido (Supabase) ----------
+  // Con estos dos datos vacíos, las cotizaciones se guardan solo en este navegador.
+  // Completalos con la URL y la clave "anon public" del proyecto para que todos vean el mismo historial.
+  const SUPABASE_URL = "";
+  const SUPABASE_KEY = "";
   const CIA_ORDER = { "Federación Patronal": 0, "Sancor Seguros": 1, "Mercantil Andina": 2, "Allianz": 3 };
   const CIA_VAR = { "Federación Patronal": "var(--fp)", "Sancor Seguros": "var(--sancor)", "Mercantil Andina": "var(--merc)", "Allianz": "var(--allianz)" };
   const NIVELES = ["Responsabilidad civil", "Terceros", "Terceros completo", "Terceros completo full", "Todo riesgo"];
@@ -1196,6 +1237,7 @@ table.mx input.yes { color: var(--accent); }
     $("meName").textContent = u.name; $("meAvatar").textContent = initials(u.name);
     const draft = store.get("cot.draft." + u.id);
     state = draft && draft.opciones ? draft : exampleState();
+    resetHist();
     renderAll();
   }
 
@@ -1526,6 +1568,121 @@ table.mx input.yes { color: var(--accent); }
       setStatus("Descarga iniciada: " + name);
     } catch (e) { setStatus("No se pudo descargar en esta vista."); }
   });
+
+  // ---------- Historial ----------
+  const remote = !!(SUPABASE_URL && SUPABASE_KEY);
+  const api = {
+    async req(method, q, body) {
+      const r = await fetch(SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/cotizaciones" + (q || ""), {
+        method, headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!r.ok) throw new Error("El servidor respondió " + r.status);
+      return r.status === 204 ? [] : r.json();
+    },
+    async list() {
+      if (remote) return this.req("GET", "?select=*&order=actualizado.desc&limit=300");
+      return (store.get("cot.history") || []).sort((a, b) => String(b.actualizado).localeCompare(String(a.actualizado)));
+    },
+    async save(rec) {
+      const now = new Date().toISOString();
+      if (remote) {
+        if (rec.id) { const r = await this.req("PATCH", "?id=eq." + encodeURIComponent(rec.id), Object.assign({}, rec, { actualizado: now })); return r[0] || rec; }
+        const r = await this.req("POST", "", Object.assign({}, rec, { creado: now, actualizado: now })); return r[0];
+      }
+      const all = store.get("cot.history") || [];
+      if (rec.id) { const i = all.findIndex((x) => x.id === rec.id); const out = Object.assign({}, all[i] || {}, rec, { actualizado: now }); if (i >= 0) all[i] = out; else all.push(out); store.set("cot.history", all); return out; }
+      const out = Object.assign({}, rec, { id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), creado: now, actualizado: now });
+      all.push(out); store.set("cot.history", all); return out;
+    },
+    async remove(id) {
+      if (remote) return this.req("DELETE", "?id=eq." + encodeURIComponent(id));
+      store.set("cot.history", (store.get("cot.history") || []).filter((x) => x.id !== id));
+    },
+  };
+  $("histMode").textContent = remote ? "compartido" : "solo en este navegador";
+  let histRows = [];
+  async function loadHist() {
+    $("histStatus").textContent = "Cargando…";
+    try { histRows = await api.list(); $("histStatus").textContent = ""; }
+    catch (e) { histRows = []; $("histStatus").textContent = "No se pudo leer el historial (" + e.message + ")."; }
+    renderHist();
+  }
+  const fmtFecha = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+  function renderHist() {
+    const t = $("histTable"); t.textContent = "";
+    const q = norm($("histSearch").value || "");
+    const rows = histRows.filter((r) => (!$("histMine").checked || r.productor_id === (me && me.id)) && (!q || norm([r.cliente, r.vehiculo, r.productor].join(" ")).includes(q)));
+    if (!rows.length) { const cap = document.createElement("caption"); cap.className = "hint"; cap.style.textAlign = "left"; cap.style.padding = "8px 0"; cap.textContent = histRows.length ? "No hay cotizaciones que coincidan con la búsqueda." : "Todavía no hay cotizaciones guardadas. Se guardan al tocar \"Guardar cotización\" o al descargar el PDF."; t.appendChild(cap); return; }
+    const head = document.createElement("thead"); head.innerHTML = "<tr><th>Fecha</th><th>Asegurado</th><th>Vehículo</th><th>Productor</th><th>Opciones</th><th>Desde</th><th></th></tr>"; t.appendChild(head);
+    const tb = document.createElement("tbody");
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+      const ops = ((r.datos && r.datos.opciones) || []).filter((o) => o.on !== false);
+      const min = ops.map((o) => o.cuota).filter((v) => v != null).sort((a, b) => a - b)[0];
+      const labels = ["Fecha", "Asegurado", "Vehículo", "Productor", "Opciones", "Desde"];
+      [fmtFecha(r.actualizado), r.cliente || "—", r.vehiculo || "—", r.productor || "—", String(ops.length), min != null ? "$" + fmtMoney(min, true) : "—"].forEach((v, i) => {
+        const td = document.createElement("td"); td.textContent = v;
+        if (i === 1) td.className = "main"; else td.setAttribute("data-label", labels[i]);
+        if (i === 5) td.className = "num";
+        tr.appendChild(td);
+      });
+      const acts = document.createElement("td"); acts.className = "acts";
+      const open = document.createElement("button"); open.type = "button"; open.className = "btn"; open.textContent = "Abrir";
+      open.addEventListener("click", () => openSaved(r));
+      acts.appendChild(open);
+      if (r.productor_id === (me && me.id)) {
+        const del = document.createElement("button"); del.type = "button"; del.className = "btn ghost"; del.textContent = "Borrar"; del.style.marginLeft = "6px";
+        del.addEventListener("click", () => {
+          acts.textContent = "";
+          const c = document.createElement("span"); c.className = "confirm"; c.textContent = "¿Borrar?";
+          const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn"; yes.textContent = "Sí, borrar";
+          const no = document.createElement("button"); no.type = "button"; no.className = "btn ghost"; no.textContent = "No";
+          yes.addEventListener("click", async () => { try { await api.remove(r.id); if (state && state.savedId === r.id) state.savedId = null; await loadHist(); } catch (e) { $("histStatus").textContent = "No se pudo borrar (" + e.message + ")."; } });
+          no.addEventListener("click", renderHist);
+          c.append(yes, no); acts.appendChild(c);
+        });
+        acts.appendChild(del);
+      }
+      tr.appendChild(acts); tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+  }
+  function resetHist() {
+    histRows = []; $("histBody").hidden = true; $("histSearch").value = ""; $("histMine").checked = false;
+    $("histToggle").textContent = "Ver historial"; $("histToggle").setAttribute("aria-expanded", "false");
+    $("histTable").textContent = ""; $("histStatus").textContent = "";
+  }
+    function openSaved(r) {
+    const d = JSON.parse(JSON.stringify(r.datos || {}));
+    state = Object.assign(emptyState(), d, { example: false, files: [], savedId: r.productor_id === (me && me.id) ? r.id : null });
+    renderAll(); saveDraft();
+    setStatus(r.productor_id === (me && me.id) ? "Abriste una cotización guardada. Los cambios se guardan sobre la misma." : "Abriste una cotización de " + (r.productor || "otro productor") + ". Si la guardás, se crea una copia a tu nombre.");
+    window.scrollTo({ top: $("histCard").offsetTop + $("histCard").offsetHeight, behavior: "smooth" });
+  }
+  async function saveCurrent(silent) {
+    if (!state || state.example || !active().length) { if (!silent) setStatus("No hay nada para guardar todavía."); return; }
+    const datos = Object.assign({}, state); delete datos.files; delete datos.savedId;
+    const rec = { productor_id: me.id, productor: me.name, cliente: state.cliente || "", vehiculo: [state.vehiculo.modelo, state.vehiculo.anio].filter(Boolean).join(" "), datos };
+    if (state.savedId) rec.id = state.savedId;
+    try {
+      const out = await api.save(rec);
+      state.savedId = out && out.id; saveDraft();
+      if (!silent) setStatus("Cotización guardada" + (remote ? " en el historial compartido." : " en este navegador."));
+      if (!$("histBody").hidden) loadHist();
+    } catch (e) { setStatus("No se pudo guardar (" + e.message + ")."); }
+  }
+  $("saveBtn").addEventListener("click", () => saveCurrent(false));
+  $("dlBtn").addEventListener("click", () => saveCurrent(true));
+  $("histToggle").addEventListener("click", () => {
+    const b = $("histBody"); b.hidden = !b.hidden;
+    $("histToggle").textContent = b.hidden ? "Ver historial" : "Ocultar historial";
+    $("histToggle").setAttribute("aria-expanded", String(!b.hidden));
+    if (!b.hidden) loadHist();
+  });
+  $("histSearch").addEventListener("input", renderHist);
+  $("histMine").addEventListener("change", renderHist);
+  $("histReload").addEventListener("click", loadHist);
 
   // ---------- Inicio ----------
   if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions && !window.pdfjsWorker) { /* sin worker: pdf.js usa el hilo principal */ }
