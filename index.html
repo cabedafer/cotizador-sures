@@ -354,7 +354,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     const all = norm(items.map((i) => i.s).join(" "));
     if (all.includes("FEDERACION PATRONAL")) return "fp";
     if (all.includes("MERCANTIL ANDINA") || all.includes("COBERTURAS COTIZADAS")) return "mercantil";
-    if (all.includes("ALLIANZ")) return "allianz";
+    if (all.includes("ALLIANZ") || (all.includes("DATOS DEL ASEGURABLE") && all.includes("COTIZACION N"))) return "allianz";
     if (all.includes("OFERTA COTIZADA") || all.includes("SANCOR")) return "sancor";
     return null;
   }
@@ -801,13 +801,31 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   }
 
   // ---------- Allianz ----------
+  // Coberturas estándar del producto Alta Gama VIP (según la cotización de Allianz que trae el detalle).
+  // Se usan cuando el PDF (por ejemplo, la vista del productor con comisiones) no incluye "Coberturas del producto".
+  const ALLIANZ_ALTA_GAMA_VIP = "Accidentes personales en caso de fallecimiento para el conductor hasta $ 2.000.000 y hasta $ 1.000.000 por acompañante. " +
+    "Adicional Granizo o Terremoto o Inundación o Desbordamiento: se cubrirán los daños sin franquicia. Allianz Asistencia - Auxilio mecánico. " +
+    "Cobertura países limítrofes y Mercosur. Daños a parabrisas y/o luneta y/o techo solar por uno o varios eventos ocurridos durante la vigencia. " +
+    "Daños parciales a consecuencia de robo y/o hurto hasta la suma de asegurada. Defensa Penal Primaria. " +
+    "Responsabilidad Civil ampliada hasta $416.000.000 para Autos, Pick ups y Motos. Rotura de cerraduras y/o vidrios laterales por uno o varios eventos. " +
+    "Servicio de gestoría sin cargo para casos de Robo o Destrucción Total. Sin franquicia para Robo y/o Hurto Parcial y Total e Incendio Parcial y/o Total. " +
+    "Vehículo sustituto por 10 días hasta 100 kilómetros libres diarios en caso de robo y/o hurto.";
+
   function parseAllianz(items) {
-    const lines = buildLines(items);
+    const lines = buildLines(items, 5);
     const T = lines.map((l) => l.text);
     const find = (re) => { for (const t of T) { const m = t.match(re); if (m) return m; } return null; };
-    const all = T.join(" ");
-    const N = norm(all);
+    let all = T.join(" ");
     const avisos = [];
+    if (!/COBERTURAS DEL PRODUCTO/.test(norm(all))) {
+      if (/ALTA GAMA VIP/.test(norm(all))) {
+        all += " " + ALLIANZ_ALTA_GAMA_VIP;
+        avisos.push("Allianz: esta cotización no trae el detalle de coberturas. Se completó con las coberturas estándar del producto Alta Gama VIP; verificalas antes de enviar.");
+      } else {
+        avisos.push("Allianz: esta cotización no trae el detalle de coberturas. Completalas en el paso 4.");
+      }
+    }
+    const N = norm(all);
     const fecha = (find(/FECHA:\s*(\d{2}\/\d{2}\/\d{4})/i) || [])[1] || "";
     const nombre = ((find(/^Nombre:\s*(.+?)(\s+Tipo Doc:|$)/i) || [])[1] || "").trim();
     const localidad = ((find(/^Localidad:\s*(.+?)(\s+Pos\.?IVA:|$)/i) || [])[1] || "").trim();
@@ -826,13 +844,17 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     const apM = all.match(/Accidentes personales[^$]*conductor hasta \$\s*([\d.]+)/i);
     const localizador = /LOCALIZADOR/.test(N);
     if (/SUJETO A LA INSTALACION DE UN LOCALIZADOR/.test(N)) avisos.push("Allianz: la cobertura queda sujeta a la instalación de un localizador satelital.");
-    if (/PICK/i.test(tipo)) avisos.push("Allianz cargó el vehículo como \"" + titleCase(tipo) + "\". Revisá que el tipo sea correcto.");
+    if (/COMISI[OÓ]N/i.test(all)) avisos.push("Allianz: es la cotización con comisiones (vista del productor). Como cuota se tomó la columna PREMIO; confirmá que sea el valor mensual que paga el asegurado.");
     const nat = /SIN FRANQUICIA/.test(N) && /GRANIZO O TERREMOTO O INUNDACION/.test(N);
     const sust = all.match(/Veh[ií]culo sustituto por (\d+) d[ií]as/i);
     const opciones = [];
     lines.forEach((l) => {
-      const m = l.text.match(/^(\d+)\s*-\s*(.+?)\s+\$\s*([\d.]+,\d{2})\s+\$\s*([\d.]+,\d{2})$/);
-      if (!m) return;
+      const mm = l.text.match(/^(\d+)\s*-\s*([^$]+?)\s+(\$.*)$/);
+      if (!mm) return;
+      const amounts = mm[3].match(/\$\s*[\d.]+,\d{2}/g);
+      if (!amounts || !amounts.length) return;
+      // La última columna es la cuota mensual (vista cliente) o el premio (vista productor con comisiones)
+      const m = [mm[0], mm[1], mm[2], null, amounts[amounts.length - 1].replace("$", "").trim()];
       const raw = m[2].trim();
       const code = (raw.match(/^([A-Z]\d*)\b/) || [])[1] || raw.split(" ")[0];
       const letra = code.charAt(0).toUpperCase();
