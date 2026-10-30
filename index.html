@@ -465,9 +465,10 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     c.granizo = (isCF || isTD) ? OK : "";
     c.inundacion = (isCF || isTD) ? "Consultar" : "";
     c.huelga = amplio ? "Consultar" : "";
-    c.cristales = moto ? "" : isC ? OK + " 1 evento por póliza" : (isCF || isTD) ? OK : "";
+    // Solo el plan C limita cristales, cerraduras y ruedas a 1 evento por póliza; CF y todo riesgo no tienen ese límite
+    c.cristales = moto ? "" : isC ? OK + " 1 evento por póliza" : (isCF || isTD) ? OK + " sin límite de eventos" : "";
     c.amparo = (isC || isCF || isTD) ? "Consultar" : "";
-    c.ruedas = (!moto && (isC || isCF || isTD)) ? "1 rueda por póliza" : "";
+    c.ruedas = moto ? "" : isC ? "1 rueda por póliza" : (isCF || isTD) ? OK + " sin límite de eventos" : "";
     c.rastreo = rastreador && /^S/i.test(rastreador.code) ? OK : "";
     c.auxilio = grua && /^S/i.test(grua.code) ? OK + " con grúa" : "";
     c.legal = isA ? "Solo RC en limítrofes" : (casco && /^S/i.test(casco.code) ? OK + " con casco en limítrofes" : OK);
@@ -487,7 +488,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     if (isTD && pct) plan = code + " · franquicia " + pct + "%";
     const nivel = isTD ? "Todo riesgo" : isCF ? "Terceros completo full" : isC ? "Terceros completo" : isB ? "Terceros" : isA ? "Responsabilidad civil" : nivelDesdeCov(c);
     let desc = descDesdeCov(c, franq);
-    if (isCF) desc = "Incluye granizo, cristales y robo de rueda";
+    if (isCF) desc = "Incluye granizo, cristales y robo de ruedas";
     const opcion = {
       cia: "Federación Patronal", plan, nivel, desc, cuota, sa, rc, franq, cov: c,
       pago: nCuotas > 1 ? nCuotas + " cuotas" : "", contado: contadoM ? numUS(contadoM[1].replace(/\.$/, "")) : null,
@@ -945,7 +946,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     ["granizo", "Granizo"], ["inundacion", "Inundación y terremoto"], ["huelga", "Huelga y tumulto"],
     ["cristales", "Cristales, luneta, parabrisas y cerraduras"],
     ["amparo", "Daños parciales al amparo de robo total"],
-    ["ruedas", "Ruedas"], ["rastreo", "Equipo de rastreo incluido"],
+    ["ruedas", "Robo de ruedas"], ["rastreo", "Equipo de rastreo incluido"],
     ["auxilio", "Auxilio mecánico y remolque"], ["legal", "Asistencia legal y países limítrofes"],
     ["ap", "Accidentes personales"], ["gestoria", "Gastos de gestoría"], ["taller", "Taller de reparación"],
     ["ajuste", "Ajuste automático de suma asegurada"], ["adicional", "Adicional incluido"],
@@ -1202,7 +1203,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
 
   // ---------- Ejemplo ----------
   function exampleState() {
-    const base = { rc: "$208.000.000", inc_total: OK, inc_parcial: OK, robo_total: OK, robo_parcial: OK, acc_total: OK, danios: "", franq_robo: "Consultar", granizo: OK, inundacion: "Consultar", huelga: "Consultar", cristales: OK, amparo: "Consultar", ruedas: "1 rueda por póliza", rastreo: "", auxilio: OK + " con grúa", legal: OK + " con casco en limítrofes", ap: "$2.080.000 (muerte)", gestoria: OK + " robo y destrucción total", taller: "A elección", ajuste: "No", adicional: "Seguro de vida (Vida Modular)" };
+    const base = { rc: "$208.000.000", inc_total: OK, inc_parcial: OK, robo_total: OK, robo_parcial: OK, acc_total: OK, danios: "", franq_robo: "Consultar", granizo: OK, inundacion: "Consultar", huelga: "Consultar", cristales: OK + " sin límite de eventos", amparo: "Consultar", ruedas: OK + " sin límite de eventos", rastreo: "", auxilio: OK + " con grúa", legal: OK + " con casco en limítrofes", ap: "$2.080.000 (muerte)", gestoria: OK + " robo y destrucción total", taller: "A elección", ajuste: "No", adicional: "Seguro de vida (Vida Modular)" };
     const sc = { rc: "$240.000.000", inc_total: OK, inc_parcial: OK, robo_total: OK, robo_parcial: OK, acc_total: OK, danios: "", franq_robo: "Sin franquicia", granizo: OK + " sin deducible ni límite", inundacion: OK + " sin deducible ni límite", huelga: OK, cristales: OK + " sin deducible ni límite", amparo: OK + " sin límite", ruedas: "", rastreo: OK, auxilio: OK, legal: OK, ap: OK + " muerte e invalidez", gestoria: OK, taller: "Consultar", ajuste: "Hasta 10%", adicional: "" };
     const td = Object.assign({}, base, { danios: OK + " franq. $1.200.000", taller: "Red de la compañía" });
     const sctd = Object.assign({}, sc, { danios: OK + " franq. $800.000", franq_robo: "10% (mín. 1% / máx. 3%)" });
