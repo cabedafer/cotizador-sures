@@ -242,7 +242,8 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
           </table></div>
           <div class="row-actions">
             <span class="hint">Por defecto va primero Federación Patronal. Usá las flechas para cambiar el orden.</span>
-            <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" id="sortPriceBtn">Ordenar por cuota (menor a mayor)</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" id="sortNivelBtn">Ordenar por cobertura</button>
+            <button type="button" class="btn ghost" id="sortPriceBtn">Ordenar por cuota (menor a mayor)</button>
             <button type="button" class="btn ghost" id="sortBtn">Ordenar por compañía</button></div>
           </div>
         </div>
@@ -1497,6 +1498,12 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     const a = state.opciones; [a[i], a[j]] = [a[j], a[i]];
     renderOps(); renderMatrix(); changed({ notes: false });
   }
+  $("sortNivelBtn").addEventListener("click", () => {
+    const rank = (n) => (CotParsers.NIVEL_RANK[n] != null ? CotParsers.NIVEL_RANK[n] : 9);
+    const cia = (c) => (CIA_ORDER[c] != null ? CIA_ORDER[c] : 9);
+    state.opciones.sort((a, b) => rank(a.nivel) - rank(b.nivel) || cia(a.cia) - cia(b.cia) || a.cia.localeCompare(b.cia) || (a.cuota == null ? Infinity : a.cuota) - (b.cuota == null ? Infinity : b.cuota));
+    renderOps(); renderMatrix(); changed({ notes: false });
+  });
   $("sortPriceBtn").addEventListener("click", () => {
     state.opciones.sort((a, b) => (a.cuota == null ? Infinity : a.cuota) - (b.cuota == null ? Infinity : b.cuota));
     renderOps(); renderMatrix(); changed({ notes: false });
