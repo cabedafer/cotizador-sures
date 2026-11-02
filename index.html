@@ -9,18 +9,18 @@
 :root {
   --bg: #F3F5F8; --surface: #FFFFFF; --surface-2: #EEF1F6; --ink: #1B2333; --muted: #5F6878;
   --line: #D9DEE6; --navy: #1B2A4A; --navy-ink: #FFFFFF; --accent: #0E7C7B; --accent-soft: #DDF0EE;
-  --warn-bg: #FFF5DB; --warn-ink: #6B4E00; --err: #B42318; --fp: #DCE8F5; --sancor: #F5DCEA; --merc: #DDF0EC; --allianz: #E6E0F2; --other: #EFE6D3;
+  --warn-bg: #FFF5DB; --warn-ink: #6B4E00; --err: #B42318; --fp: #DCE8F5; --sancor: #F5DCEA; --merc: #DDF0EC; --allianz: #E6E0F2; --holando: #FCE9C8; --other: #EFE6D3;
   --font: "Public Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
   --r: 10px;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #111722; --surface: #18202E; --surface-2: #202A3B; --ink: #E6EAF1; --muted: #9AA4B5;
   --line: #2E3A4F; --navy: #24375F; --navy-ink: #FFFFFF; --accent: #4CC3BF; --accent-soft: #163634;
-  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --other: #3A3324; color-scheme: dark; } }
+  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --holando: #45361A; --other: #3A3324; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #111722; --surface: #18202E; --surface-2: #202A3B; --ink: #E6EAF1; --muted: #9AA4B5;
   --line: #2E3A4F; --navy: #24375F; --navy-ink: #FFFFFF; --accent: #4CC3BF; --accent-soft: #163634;
-  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --other: #3A3324; color-scheme: dark; }
+  --warn-bg: #3A2F12; --warn-ink: #F3D58A; --err: #FF8A7A; --fp: #23364F; --sancor: #45263A; --merc: #1E3B36; --allianz: #2E2A48; --holando: #45361A; --other: #3A3324; color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { background: var(--bg); color: var(--ink); }
@@ -202,7 +202,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
         <div class="card-b">
           <label class="drop" id="drop" for="fileInput">
             <strong>Arrastrá los PDFs acá o tocá para elegirlos</strong>
-            <span class="hint">Federación Patronal, Sancor, Mercantil Andina y Allianz. Podés subir varios a la vez.</span>
+            <span class="hint">Federación Patronal, Sancor, Mercantil Andina, Allianz y La Holando. Podés subir varios a la vez.</span>
             <input id="fileInput" type="file" accept="application/pdf" multiple class="sr">
           </label>
           <div class="files" id="fileList"></div>
@@ -354,6 +354,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     const all = norm(items.map((i) => i.s).join(" "));
     if (all.includes("FEDERACION PATRONAL")) return "fp";
     if (all.includes("MERCANTIL ANDINA") || all.includes("COBERTURAS COTIZADAS")) return "mercantil";
+    if (all.includes("HOLANDO") || all.includes("HOLADO") || (all.includes("PRESUPUESTO Y CONDICIONES") && all.includes("INCREMENTO RC"))) return "holando";
     if (all.includes("ALLIANZ") || (all.includes("DATOS DEL ASEGURABLE") && all.includes("COTIZACION N"))) return "allianz";
     if (all.includes("OFERTA COTIZADA") || all.includes("SANCOR")) return "sancor";
     return null;
@@ -902,12 +903,103 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     };
   }
 
+  // ---------- La Holando ----------
+  function parseHolando(items) {
+    const lines = buildLines(items, 3);
+    const all = lines.map((l) => l.text).join(" ");
+    const N = norm(all);
+    const avisos = [];
+    // Valor debajo de un rótulo de tabla (columnas en x≈30/164/298/431)
+    const cols = [0, 150, 285, 420, 9999];
+    function below(label) {
+      const li = lines.findIndex((l) => norm(l.text).includes(norm(label)));
+      if (li < 0) return "";
+      const lab = lines[li].items.find((x) => norm(label).startsWith(norm(x.s)) || norm(x.s).startsWith(norm(label).split(" ")[0]));
+      if (!lab) return "";
+      const ci = cols.findIndex((c, i) => lab.x >= c && lab.x < cols[i + 1]);
+      const nx = lines[li + 1];
+      if (!nx || nx.p !== lines[li].p) return "";
+      return nx.items.filter((x) => x.x >= cols[ci] && x.x < cols[ci + 1]).map((x) => x.s).join(" ").trim();
+    }
+    const fecha = below("Fecha cotización");
+    const vence = below("Vencimiento cotización");
+    const iva = ivaNorm(below("Condición IVA"));
+    const nombre = below("Nombre y Apellido");
+    const marca = below("Marca"), modelo = below("Modelo"), anio = below("Año");
+    const sa = numAR(below("Suma asegurada"));
+    const uso = below("Uso") || "Particular";
+    const loc = below("Localidad");
+    const ajuste = below("Ajuste automático");
+    const rcM = all.match(/\(\$\s*([\d.]+)\)/);
+    const rc = rcM ? numAR(rcM[1]) : null;
+    const limM = all.match(/pa[ií]ses lim[ií]trofes hasta U\$S\s*([\d.]+)/i);
+    const gestM = all.match(/Gestor[ií]a[^$]*\$\s*([\d.]+)/i);
+    const head = items.find((x) => x.s.trim() === "Premio");
+    const benef = items.find((x) => /^Beneficios$/i.test(x.s.trim()));
+    const amounts = items.filter((x) => head && x.p === head.p && x.y > head.y && (!benef || x.y < benef.y) && x.x > head.x - 30 && x.x < head.x + 60 && /^[\d.]+,\d{2}\.?-?$/.test(x.s.trim()));
+    const xxlBenef = /A PARTIR DE LA COBERTURA C1 PLUS XXL/.test(N);
+    const opciones = amounts.map((a) => {
+      const name = items.filter((x) => x.p === a.p && x.x < head.x - 30 && Math.abs(x.y - a.y) <= 8).sort((p, q) => p.y - q.y || p.x - q.x).map((x) => x.s).join(" ").replace(/\s+/g, " ").trim();
+      const n = norm(name);
+      const isRC = /^RESPONSABILIDAD CIVIL/.test(n) || /^A\b/.test(n);
+      const code = isRC ? "RC" : (name.match(/^([A-Z]\d?)\b/) || [])[1] || name.split(" ")[0];
+      const isB = /^B/.test(code), isC1 = code === "C1", isC = code === "C";
+      const amplio = isC || isC1;
+      const xxl = /XXL/.test(n);
+      const c = {};
+      c.rc = rc ? fmtInt(rc) : OK;
+      c.inc_total = isRC || code === "B0" ? "" : OK;
+      c.robo_total = isRC ? "" : OK;
+      c.acc_total = (code === "B" || isC) ? OK : "";
+      c.inc_parcial = amplio ? OK : "";
+      c.robo_parcial = amplio ? OK : "";
+      c.danios = "";
+      c.franq_robo = amplio ? "Consultar" : "";
+      if (amplio && xxl && xxlBenef) {
+        c.granizo = OK + " sin franquicia, tope suma asegurada";
+        c.inundacion = /INUNDACION SIN FRANQUICIA/.test(N) ? OK + " inundación sin franquicia" : "";
+        c.cristales = OK + " sin franquicia, tope suma asegurada";
+        c.amparo = OK + " sin franquicia, tope suma asegurada";
+      } else if (amplio) {
+        c.granizo = OK + " hasta $700.000";
+        c.inundacion = "";
+        c.cristales = OK + " parabrisas y luneta hasta $400.000; laterales y cerraduras hasta $200.000";
+        c.amparo = OK + " hasta $700.000";
+      } else { c.granizo = ""; c.inundacion = ""; c.cristales = ""; c.amparo = ""; }
+      c.huelga = amplio ? "Consultar" : "";
+      c.ruedas = "";
+      c.rastreo = "";
+      c.auxilio = isRC ? "Consultar" : OK;
+      c.legal = OK + " asistencia penal" + (limM ? "; RC limítrofes U$S " + limM[1] : "");
+      c.ap = "";
+      c.gestoria = isRC ? "" : OK + (gestM ? " hasta $" + gestM[1] : "");
+      c.taller = "Consultar";
+      c.ajuste = /NINGUN/.test(norm(ajuste)) || !ajuste ? "No" : ajuste;
+      c.adicional = "";
+      const plan = isRC ? "RC" : titleCase(name.split(/\s+RC\b|\s+–|\s+-/)[0]).replace(/\bXxl\b/, "XXL");
+      const nivel = isRC ? "Responsabilidad civil" : isB ? "Terceros" : isC1 ? "Terceros completo" : isC && c.granizo ? "Terceros completo full" : nivelDesdeCov(c);
+      let desc = descDesdeCov(c, null);
+      if (isC1) desc = xxl ? "Granizo, inundación y cristales; sin accidente total" : "Robo e incendio parcial; sin accidente total";
+      if (isC && xxl) desc = "Incluye granizo, inundación y cristales";
+      return { cia: "La Holando", plan, nivel, desc, cuota: numAR(a.s), sa: isRC ? null : sa, rc, franq: null, cov: c, pago: "", contado: null };
+    });
+    if (!opciones.length) throw new Error("No encontré las coberturas en la cotización de La Holando.");
+    if (/HILUX|AMAROK|S-?10|RANGER|FRONTIER|MITSUBISHI/.test(norm(marca + " " + modelo))) avisos.push("La Holando: para este vehículo puede ser obligatorio instalar un sistema de seguimiento satelital para otorgar la cobertura.");
+    return {
+      cia: "La Holando", fecha, solicitante: nombre && !/CONDICI/.test(norm(nombre)) ? nombreNatural(nombre) : "", iva,
+      vehiculo: { modelo: titleCase(cleanModel((marca + " " + modelo).trim())), anio, uso: titleCase(uso), radicacion: titleCase(loc.replace(/\(/, " (").replace(/\s+/g, " ")), moto: /MOTO/.test(norm(below("Tipo"))) },
+      vigencia: vence ? "La Holando: cotización válida hasta el " + vence + "." : "",
+      opciones, avisos,
+    };
+  }
+
   function parseItems(items) {
     const tipo = detect(items);
     if (tipo === "fp") return parseFP(items);
     if (tipo === "sancor") return parseSancor(items);
     if (tipo === "mercantil") return parseMercantil(items);
     if (tipo === "allianz") return parseAllianz(items);
+    if (tipo === "holando") return parseHolando(items);
     throw new Error("No reconocí la compañía de este PDF.");
   }
 
@@ -952,7 +1044,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     ["ajuste", "Ajuste automático de suma asegurada"], ["adicional", "Adicional incluido"],
   ];
   const CIA_COLORS = {
-    "Federación Patronal": [220, 232, 245], "Sancor Seguros": [245, 220, 234], "Mercantil Andina": [221, 240, 236], "Allianz": [230, 224, 242],
+    "Federación Patronal": [220, 232, 245], "Sancor Seguros": [245, 220, 234], "Mercantil Andina": [221, 240, 236], "Allianz": [230, 224, 242], "La Holando": [252, 233, 200],
   };
   const EXTRA_COLORS = [[239, 230, 211], [230, 224, 242], [226, 236, 214], [242, 226, 220]];
   const NAVY = [27, 42, 74], MUTED = [107, 114, 128], LINE = [213, 218, 225], LIGHT = [242, 244, 247], TEAL = [14, 124, 123], INK = [31, 41, 55];
@@ -1183,8 +1275,8 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   // Completalos con la URL y la clave "anon public" del proyecto para que todos vean el mismo historial.
   const SUPABASE_URL = "";
   const SUPABASE_KEY = "";
-  const CIA_ORDER = { "Federación Patronal": 0, "Sancor Seguros": 1, "Mercantil Andina": 2, "Allianz": 3 };
-  const CIA_VAR = { "Federación Patronal": "var(--fp)", "Sancor Seguros": "var(--sancor)", "Mercantil Andina": "var(--merc)", "Allianz": "var(--allianz)" };
+  const CIA_ORDER = { "Federación Patronal": 0, "Sancor Seguros": 1, "Mercantil Andina": 2, "Allianz": 3, "La Holando": 4 };
+  const CIA_VAR = { "Federación Patronal": "var(--fp)", "Sancor Seguros": "var(--sancor)", "Mercantil Andina": "var(--merc)", "Allianz": "var(--allianz)", "La Holando": "var(--holando)" };
   const NIVELES = ["Responsabilidad civil", "Terceros", "Terceros completo", "Terceros completo full", "Todo riesgo"];
   const OK = "✓";
   const $ = (id) => document.getElementById(id);
@@ -1306,7 +1398,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     if (!v.modelo) v.modelo = r.vehiculo.modelo;
     if (!v.anio) v.anio = r.vehiculo.anio;
     // Localidad de guarda: prioriza la "ubicación del riesgo" (Sancor, Mercantil) sobre el domicilio (Federación, Allianz)
-    const prio = { "Sancor Seguros": 3, "Mercantil Andina": 3, "Federación Patronal": 1, "Allianz": 1 }[r.cia] || 1;
+    const prio = { "Sancor Seguros": 3, "Mercantil Andina": 3, "La Holando": 3, "Federación Patronal": 1, "Allianz": 1 }[r.cia] || 1;
     if (r.vehiculo.radicacion && (!v.radicacion || (state.autoRad !== false && prio > (state.radPrio || 0)))) { v.radicacion = r.vehiculo.radicacion; state.radPrio = prio; state.autoRad = true; }
     // Nombre del asegurado: el que figura en la cotización (salvo que sea uno de los productores)
     const surn = USERS.map((u) => norm(u.name).split(" ").slice(-1)[0]);
