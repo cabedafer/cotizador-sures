@@ -1342,12 +1342,13 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   });
   $("logoutBtn").addEventListener("click", () => { saveDraft(); store.del("cot.session"); me = null; renderLogin(); });
 
-  function enter(u) {
+  function enter(u, resume) {
     me = u;
     $("loginView").hidden = true; $("appView").hidden = false;
     $("meName").textContent = u.name; $("meAvatar").textContent = initials(u.name);
     const draft = store.get("cot.draft." + u.id);
-    state = draft && draft.opciones ? draft : exampleState();
+    // Al ingresar arranca en blanco; si solo se recargó la página, recupera lo que estaba cargado
+    state = resume && draft && draft.opciones && !draft.example ? draft : emptyState();
     resetHist();
     renderAll();
   }
@@ -1799,7 +1800,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions && !window.pdfjsWorker) { /* sin worker: pdf.js usa el hilo principal */ }
   const sid = store.get("cot.session");
   const su = USERS.find((u) => u.id === sid);
-  if (su) enter(su); else renderLogin();
+  if (su) enter(su, true); else renderLogin();
 })();
 </script>
 
