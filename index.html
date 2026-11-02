@@ -157,11 +157,13 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
       <h1>Cotizador de Seguros</h1>
     </div>
     <form class="login-body" id="loginForm" autocomplete="off">
-      <div class="field"><label>Elegí tu usuario</label></div>
-      <div class="users" id="userList" role="group" aria-label="Usuarios"></div>
       <div class="field">
-        <label for="pin">PIN de 4 dígitos</label>
-        <input id="pin" type="password" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="••••">
+        <label for="usuario">Usuario</label>
+        <input id="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej.: J. Pérez">
+      </div>
+      <div class="field">
+        <label for="pin">Contraseña</label>
+        <input id="pin" type="password" autocomplete="current-password" placeholder="••••">
       </div>
       <div class="error" id="loginError" role="alert"></div>
       <button class="btn primary" type="submit" id="loginBtn">Ingresar</button>
@@ -1263,12 +1265,13 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
 (function () {
   "use strict";
   // ---------- Usuarios ----------
-  // Para agregar o cambiar un usuario, editá esta lista (nombre y PIN de 4 dígitos).
+  // Usuarios: "user" es lo que se escribe al ingresar (no distingue mayúsculas, puntos ni espacios),
+  // "name" es el nombre que sale en el PDF y "pin" la contraseña.
   const USERS = [
-    { id: "fernando", name: "Fernando Cabeda", pin: "4444" },
-    { id: "mariano", name: "Mariano Santa Cruz", pin: "4444" },
-    { id: "pablo", name: "Pablo Machado", pin: "4444" },
-    { id: "diego", name: "Diego Klaic", pin: "4444" },
+    { id: "fernando", user: "F. Cabeda", name: "Fernando Cabeda", pin: "4444" },
+    { id: "mariano", user: "M. Santa Cruz", name: "Mariano Santa Cruz", pin: "4444" },
+    { id: "pablo", user: "P. Machado", name: "Pablo Machado", pin: "4444" },
+    { id: "diego", user: "D. Klaic", name: "Diego Klaic", pin: "4444" },
   ];
   // ---------- Guardado compartido (Supabase) ----------
   // Con estos dos datos vacíos, las cotizaciones se guardan solo en este navegador.
@@ -1319,31 +1322,23 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
   }
 
   // ---------- Login ----------
-  let chosen = null;
+  const userKey = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
   function renderLogin() {
     $("appView").hidden = true; $("loginView").hidden = false;
-    const list = $("userList"); list.textContent = "";
-    USERS.forEach((u) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "user-btn"; b.id = "user-" + u.id;
-      b.setAttribute("aria-pressed", chosen === u.id ? "true" : "false");
-      const av = document.createElement("div"); av.className = "avatar"; av.textContent = initials(u.name);
-      const nm = document.createElement("span"); nm.textContent = u.name;
-      b.append(av, nm);
-      b.addEventListener("click", () => { chosen = u.id; renderLogin(); $("pin").focus(); });
-      list.appendChild(b);
-    });
+    $("loginError").textContent = "";
+    setTimeout(() => { try { $("usuario").focus(); } catch (e) {} }, 0);
   }
   $("loginForm").addEventListener("submit", (e) => {
     e.preventDefault();
-    const u = USERS.find((x) => x.id === chosen);
-    if (!u) { $("loginError").textContent = "Elegí tu usuario."; return; }
-    if ($("pin").value !== u.pin) { $("loginError").textContent = "El PIN no coincide. Probá de nuevo."; $("pin").select(); return; }
-    $("loginError").textContent = ""; $("pin").value = "";
+    const typed = userKey($("usuario").value);
+    if (!typed) { $("loginError").textContent = "Escribí tu usuario."; $("usuario").focus(); return; }
+    const u = USERS.find((x) => userKey(x.user) === typed);
+    if (!u || $("pin").value !== u.pin) { $("loginError").textContent = "Usuario o contraseña incorrectos. Probá de nuevo."; $("pin").select(); return; }
+    $("loginError").textContent = ""; $("pin").value = ""; $("usuario").value = "";
     store.set("cot.session", u.id);
     enter(u);
   });
-  $("logoutBtn").addEventListener("click", () => { saveDraft(); store.del("cot.session"); me = null; chosen = null; renderLogin(); });
+  $("logoutBtn").addEventListener("click", () => { saveDraft(); store.del("cot.session"); me = null; renderLogin(); });
 
   function enter(u) {
     me = u;
