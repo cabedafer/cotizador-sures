@@ -38,6 +38,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .login-head { background: var(--navy); color: var(--navy-ink); padding: 22px 24px; }
 .login-head .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
 .login-head h1 { font-size: 22px; margin-top: 4px; }
+.login-head .login-org { font-size: 14px; font-weight: 500; opacity: .8; margin-top: 2px; }
 .login-body { padding: 22px 24px 24px; display: grid; gap: 16px; }
 .users { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .user-btn { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); text-align: left; }
@@ -155,6 +156,7 @@ table.hist .btn { padding: 5px 10px; font-size: 12.5px; }
     <div class="login-head">
       <div class="eyebrow">Productores Asesores de Seguros</div>
       <h1>Cotizador de Seguros</h1>
+      <div class="login-org">Grupo Sures</div>
     </div>
     <form class="login-body" id="loginForm" autocomplete="off">
       <div class="field">
